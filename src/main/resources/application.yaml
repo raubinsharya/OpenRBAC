@@ -1,0 +1,73 @@
+spring:
+  profiles:
+    active: local
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/open_rbac
+    driver-class-name: org.postgresql.Driver
+    username: rbac_user
+    password: rbac123
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+
+  devtools:
+    restart:
+      enabled: true
+      additional-paths: src/main/java
+    livereload:
+      enabled: true
+
+server:
+  port: 8080
+  error:
+    include-stacktrace: never
+    include-message: on-param
+    include-binding-errors: never
+    whitelabel:
+      enabled: false
+
+keycloak:
+  base-url: http://localhost:4000
+
+---
+# Local development profile
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:postgresql://localhost:5432/open_rbac
+    driver-class-name: org.postgresql.Driver
+    username: rbac_user
+    password: rbac123
+  data:
+    redis:
+      host: localhost
+      port: 6379
+keycloak:
+  base-url: http://localhost:4000
+
+---
+# Docker profile
+spring:
+  config:
+    activate:
+      on-profile: docker
+  datasource:
+    url: jdbc:postgresql://postgres:5432/open_rbac
+    driver-class-name: org.postgresql.Driver
+    username: rbac_user
+    password: rbac123
+  data:
+    redis:
+      host: redis
+      port: 6379
+keycloak:
+  base-url: http://keycloak:8080

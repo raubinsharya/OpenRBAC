@@ -1,0 +1,17 @@
+# Multi-stage build to download Kafka SPI
+FROM alpine:latest as downloader
+RUN apk add --no-cache curl
+RUN curl -L -o /keycloak-kafka-1.3.0.jar \
+    https://github.com/SnuK87/keycloak-kafka/releases/download/1.3.0/keycloak-kafka-1.3.0-jar-with-dependencies.jar
+
+# Custom Keycloak with Kafka SPI
+FROM quay.io/keycloak/keycloak:23.0
+
+# Copy the downloaded JAR from the previous stage
+COPY --from=downloader /keycloak-kafka-1.3.0.jar /opt/keycloak/providers/
+
+# Build Keycloak with the new provider
+RUN /opt/keycloak/bin/kc.sh build
+
+# Set the entrypoint
+ENTRYPOINT ["/opt/keycloak/bin/kc.sh"]
