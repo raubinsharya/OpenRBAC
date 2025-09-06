@@ -75,45 +75,4 @@ public class UserPermission {
     public boolean isExpired() {
         return expiryDate != null && expiryDate.isBefore(LocalDateTime.now());
     }
-    
-    /**
-     * Get remaining time until expiry in minutes
-     */
-    public Long getRemainingMinutes() {
-        if (expiryDate == null) {
-            return null; // Permanent permission
-        }
-        
-        LocalDateTime now = LocalDateTime.now();
-        if (expiryDate.isBefore(now)) {
-            return 0L; // Already expired
-        }
-        
-        return java.time.Duration.between(now, expiryDate).toMinutes();
-    }
-    
-    /**
-     * Check if permission grant is temporary (has expiry date)
-     */
-    public boolean isTemporary() {
-        return expiryDate != null;
-    }
-    
-    /**
-     * Get permission identifier for this grant
-     */
-    public String getPermissionIdentifier() {
-        return permission != null ? permission.getPermissionIdentifier() : null;
-    }
-    
-    /**
-     * Check if user and permission belong to the same realm
-     */
-    public boolean isRealmConsistent() {
-        if (user == null || permission == null || 
-            user.getRealm() == null || permission.getRealm() == null) {
-            return false;
-        }
-        return user.getRealm().getId().equals(permission.getRealm().getId());
-    }
 }

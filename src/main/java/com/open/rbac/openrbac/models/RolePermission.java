@@ -46,38 +46,4 @@ public class RolePermission {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_by")
     private User assignedBy;
-    
-    /**
-     * Check if role-permission assignment is valid
-     * Both role and permission must be active
-     */
-    public boolean isValid() {
-        return (role == null || role.isActive()) && 
-               (permission == null || permission.isActive());
-    }
-    
-    /**
-     * Get permission identifier for this assignment
-     */
-    public String getPermissionIdentifier() {
-        return permission != null ? permission.getPermissionIdentifier() : null;
-    }
-    
-    /**
-     * Get role identifier for this assignment
-     */
-    public String getRoleIdentifier() {
-        return role != null ? role.getRoleIdentifier() : null;
-    }
-    
-    /**
-     * Check if both role and permission belong to the same realm
-     */
-    public boolean isRealmConsistent() {
-        if (role == null || permission == null || 
-            role.getRealm() == null || permission.getRealm() == null) {
-            return false;
-        }
-        return role.getRealm().getId().equals(permission.getRealm().getId());
-    }
 }

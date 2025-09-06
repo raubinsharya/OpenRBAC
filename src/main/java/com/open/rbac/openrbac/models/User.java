@@ -1,7 +1,5 @@
 package com.open.rbac.openrbac.models;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -41,11 +39,6 @@ public class User {
     @Column(name = "keycloak_user_id", nullable = false, unique = true)
     private String keycloakUserId;
 
-    // === RBAC REALM ===
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "realm_id", nullable = false)
-    private Realm realm;
-
     // === USER INFORMATION (synced from Keycloak) ===
     @Column(nullable = false)
     private String firstName;
@@ -75,6 +68,11 @@ public class User {
 
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    // === RBAC REALM ===
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "realm_id", nullable = false)
+    private Realm realm;
 
     // === LIFECYCLE CALLBACKS ===
     @PrePersist

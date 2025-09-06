@@ -18,16 +18,9 @@ public class RealmController {
     private final RealmService realmService;
 
     @GetMapping
-    public ResponseEntity<?> getAllRealms(
+    public ResponseEntity<?> getAllRealms(@RequestParam(required = false) String status,
             @AuthenticationPrincipal Jwt jwt) {
-        List<RealmDTO> realms = realmService.getAllRealms();
-        return ResponseEntity.ok(realms);
-    }
-
-    @GetMapping("/users")
-    public ResponseEntity<List<RealmDTO>> getAllRealmsWithUsers(
-            @AuthenticationPrincipal Jwt jwt) {
-        List<RealmDTO> realms = realmService.getAllRealmsWithUsers();
+        List<RealmDTO> realms = realmService.getAllRealms(status);
         return ResponseEntity.ok(realms);
     }
 
@@ -37,28 +30,9 @@ public class RealmController {
     }
 
     @GetMapping("/realm-id/{realmId}")
-    public ResponseEntity<RealmDTO> getRealmByRealmId(@PathVariable String realmId,
+    public ResponseEntity<?> getRealmByRealmId(@PathVariable String realmId,
             @AuthenticationPrincipal Jwt jwt) {
-        return realmService.getRealmDTOByRealmId(realmId)
-                .map(realmDTO -> ResponseEntity.ok(realmDTO))
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    @GetMapping("/{id}/users")
-    public ResponseEntity<?> getUsersByRealmId(
-            @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt) {
-            return ResponseEntity.ok(realmService.getRealmWithUsersDTO(id));
-      
-    }
-
-    @GetMapping("/realm-id/{realmId}/users")
-    public ResponseEntity<?> getUsersByRealmIdString(
-            @PathVariable String realmId,
-            @AuthenticationPrincipal Jwt jwt) {
-       
-            return ResponseEntity.ok(realmService.getRealmWithUsersDTOByRealmId(realmId));
-    
+        return ResponseEntity.ok(realmService.getRealmByRealmId(realmId).orElse(null));
     }
 
 }

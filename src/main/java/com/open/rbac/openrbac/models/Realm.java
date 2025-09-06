@@ -64,6 +64,18 @@ public class Realm {
     @JsonIgnore // Prevent infinite recursion and lazy loading issues
     private List<User> users;
 
+    @OneToMany(mappedBy = "realm", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore // Prevent infinite recursion and lazy loading issues
+    private List<Role> roles;
+
+    @OneToMany(mappedBy = "realm", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore // Prevent infinite recursion and lazy loading issues
+    private List<Permission> permissions;
+
+    @OneToMany(mappedBy = "realm", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JsonIgnore // Prevent infinite recursion and lazy loading issues
+    private List<Group> groups;
+
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();

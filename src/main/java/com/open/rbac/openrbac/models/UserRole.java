@@ -75,45 +75,4 @@ public class UserRole {
     public boolean isExpired() {
         return expiryDate != null && expiryDate.isBefore(LocalDateTime.now());
     }
-    
-    /**
-     * Get remaining time until expiry in minutes
-     */
-    public Long getRemainingMinutes() {
-        if (expiryDate == null) {
-            return null; // Permanent assignment
-        }
-        
-        LocalDateTime now = LocalDateTime.now();
-        if (expiryDate.isBefore(now)) {
-            return 0L; // Already expired
-        }
-        
-        return java.time.Duration.between(now, expiryDate).toMinutes();
-    }
-    
-    /**
-     * Check if role assignment is temporary (has expiry date)
-     */
-    public boolean isTemporary() {
-        return expiryDate != null;
-    }
-    
-    /**
-     * Get role identifier for this assignment
-     */
-    public String getRoleIdentifier() {
-        return role != null ? role.getRoleIdentifier() : null;
-    }
-    
-    /**
-     * Check if user and role belong to the same realm
-     */
-    public boolean isRealmConsistent() {
-        if (user == null || role == null || 
-            user.getRealm() == null || role.getRealm() == null) {
-            return false;
-        }
-        return user.getRealm().getId().equals(role.getRealm().getId());
-    }
 }

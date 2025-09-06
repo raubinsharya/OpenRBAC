@@ -9,55 +9,54 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Association entity for Group-Role assignments with inheritance tracking and expiry support
+ * Association entity for Group-Role assignments with inheritance tracking and
+ * expiry support
  * Supports both direct role assignments and inherited roles from parent groups
  */
 @Entity
-@Table(name = "group_roles",
-       indexes = {
-           @Index(name = "idx_group_role_group", columnList = "group_id"),
-           @Index(name = "idx_group_role_role", columnList = "role_id"),
-           @Index(name = "idx_group_role_inherited", columnList = "is_inherited"),
-           @Index(name = "idx_group_role_source", columnList = "source_group_id"),
-           @Index(name = "idx_group_role_expiry", columnList = "expiry_date"),
-           @Index(name = "idx_group_role_active", columnList = "is_active")
-       },
-       uniqueConstraints = {
-           @UniqueConstraint(name = "uk_group_role", columnNames = {"group_id", "role_id"})
-       })
+@Table(name = "group_roles", indexes = {
+        @Index(name = "idx_group_role_group", columnList = "group_id"),
+        @Index(name = "idx_group_role_role", columnList = "role_id"),
+        @Index(name = "idx_group_role_inherited", columnList = "is_inherited"),
+        @Index(name = "idx_group_role_source", columnList = "source_group_id"),
+        @Index(name = "idx_group_role_expiry", columnList = "expiry_date"),
+        @Index(name = "idx_group_role_active", columnList = "is_active")
+}, uniqueConstraints = {
+        @UniqueConstraint(name = "uk_group_role", columnNames = { "group_id", "role_id" })
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
 public class GroupRole {
-    
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id", nullable = false)
     private Group group;
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
-    
+
     @Column(name = "assigned_at", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime assignedAt = LocalDateTime.now();
-    
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_by")
     private User assignedBy;
-    
+
     /**
      * Expiry date for temporary role assignment
      * NULL means permanent assignment
      */
     @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
-    
+
     /**
      * True if this role is inherited from a parent group
      * False if directly assigned to this group
@@ -65,7 +64,7 @@ public class GroupRole {
     @Column(name = "is_inherited", nullable = false)
     @Builder.Default
     private Boolean isInherited = false;
-    
+
     /**
      * Source group from which this role is inherited
      * NULL if directly assigned (not inherited)
@@ -73,11 +72,11 @@ public class GroupRole {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "source_group_id")
     private Group sourceGroup;
-    
+
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
-    
+
     /**
      * Controls whether this role can be inherited by child groups
      * Default: false (no inheritance)
@@ -85,7 +84,7 @@ public class GroupRole {
     @Column(name = "allow_inheritance", nullable = false)
     @Builder.Default
     private Boolean allowInheritance = false;
-    
+
     /**
      * Maximum inheritance depth (levels down from this group)
      * NULL means inherit to all descendant levels (leaf groups)
@@ -95,94 +94,20 @@ public class GroupRole {
      */
     @Column(name = "max_inheritance_depth")
     private Integer maxInheritanceDepth;
-    
+
     /**
      * Check if role assignment is currently valid (not expired and active)
      */
     public boolean isValid() {
-        return Boolean.TRUE.equals(isActive) && 
-               (expiryDate == null || expiryDate.isAfter(LocalDateTime.now())) &&
-               (role == null || role.isActive());
+        return Boolean.TRUE.equals(isActive) &&
+                (expiryDate == null || expiryDate.isAfter(LocalDateTime.now())) &&
+                (role == null || role.isActive());
     }
-    
+
     /**
      * Check if role assignment has expired
      */
     public boolean isExpired() {
         return expiryDate != null && expiryDate.isBefore(LocalDateTime.now());
-    }
-    
-    /**
-     * Get remaining time until expiry in minutes
-     */
-    public Long getRemainingMinutes() {
-        if (expiryDate == null) {
-            return null; // Permanent assignment
-        }
-        
-        LocalDateTime now = LocalDateTime.now();
-        if (expiryDate.isBefore(now)) {
-            return 0L; // Already expired
-        }
-        
-        return java.time.Duration.between(now, expiryDate).toMinutes();
-    }
-    
-    /**
-     * Check if role assignment is temporary (has expiry date)
-     */
-    public boolean isTemporary() {
-        return expiryDate != null;
-    }
-    
-    /**
-     * Check if this is a directly assigned role (not inherited)
-     */
-    public boolean isDirect() {
-        return !Boolean.TRUE.equals(isInherited);
-    }
-    
-    /**
-     * Get the inheritance path description
-     */
-    public String getInheritancePath() {
-        if (isDirect()) {
-            return "Direct assignment";
-        }
-        return "Inherited from group: " + (sourceGroup != null ? sourceGroup.getName() : "Unknown");
-    }
-    
-    /**
-     * Check if this role can be inherited by child groups at the specified depth
-     */
-    public boolean canInheritAtDepth(int depth) {
-        if (!Boolean.TRUE.equals(allowInheritance)) {
-            return false;
-        }
-        
-        if (maxInheritanceDepth == null) {
-            return true; // Inherit to all levels
-        }
-        
-        return depth <= maxInheritanceDepth;
-    }
-    
-    /**
-     * Get inheritance description
-     */
-    public String getInheritanceDescription() {
-        if (!Boolean.TRUE.equals(allowInheritance)) {
-            return "No inheritance";
-        }
-        
-        if (maxInheritanceDepth == null) {
-            return "Inherit to all descendant levels";
-        }
-        
-        if (maxInheritanceDepth == 0) {
-            return "No inheritance";
-        }
-        
-        return "Inherit up to " + maxInheritanceDepth + " level(s) down";
     }
 }

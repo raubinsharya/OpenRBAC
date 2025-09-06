@@ -74,27 +74,4 @@ public class UserGroup {
     public boolean isExpired() {
         return expiryDate != null && expiryDate.isBefore(LocalDateTime.now());
     }
-    
-    /**
-     * Get remaining time until expiry in minutes
-     */
-    public Long getRemainingMinutes() {
-        if (expiryDate == null) {
-            return null; // Permanent membership
-        }
-        
-        LocalDateTime now = LocalDateTime.now();
-        if (expiryDate.isBefore(now)) {
-            return 0L; // Already expired
-        }
-        
-        return java.time.Duration.between(now, expiryDate).toMinutes();
-    }
-    
-    /**
-     * Check if membership is temporary (has expiry date)
-     */
-    public boolean isTemporary() {
-        return expiryDate != null;
-    }
 }
