@@ -1,0 +1,143 @@
+package com.open.rbac.openrbac.models;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.time.LocalDateTime;
+
+import com.open.rbac.openrbac.enums.EntityStatus;
+
+/**
+ * Permission entity for fine-grained access control
+ * Permissions follow the RESOURCE_ACTION naming convention (e.g., BOOK_CREATE, USER_EDIT)
+ */
+@Entity
+@Table(name = "permissions", 
+       indexes = {
+           @Index(name = "idx_permission_realm_name", columnList = "realm_id, name"),
+           @Index(name = "idx_permission_resource", columnList = "resource"),
+           @Index(name = "idx_permission_action", columnList = "action"),
+           @Index(name = "idx_permission_resource_action", columnList = "resource, action"),
+           @Index(name = "idx_permission_status", columnList = "status")
+       },
+       uniqueConstraints = {
+           @UniqueConstraint(name = "uk_permission_realm_name", columnNames = {"realm_id", "name"})
+       })
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Permission {
+    
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "realm_id", nullable = false)
+    private Realm realm;
+    
+    /**
+     * Permission name following RESOURCE_ACTION convention
+     * Examples: BOOK_CREATE, USER_EDIT, REPORT_VIEW, ADMIN_MANAGE
+     */
+    @Column(nullable = false, length = 100)
+    @NotBlank(message = "Permission name is required")
+    @Size(min = 3, max = 100, message = "Permission name must be between 3 and 100 characters")
+    private String name;
+    
+    /**
+     * Resource that this permission applies to
+     * Examples: BOOK, USER, REPORT, ADMIN
+     */
+    @Column(nullable = false, length = 50)
+    @NotBlank(message = "Resource is required")
+    @Size(min = 2, max = 50, message = "Resource must be between 2 and 50 characters")
+    private String resource;
+    
+    /**
+     * Action that can be performed on the resource
+     * Examples: CREATE, READ, UPDATE, DELETE, MANAGE, VIEW, EDIT
+     */
+    @Column(nullable = false, length = 50)
+    @NotBlank(message = "Action is required")
+    @Size(min = 2, max = 50, message = "Action must be between 2 and 50 characters")
+    private String action;
+    
+    @Column(columnDefinition = "TEXT")
+    private String description;
+    
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private EntityStatus status = EntityStatus.ACTIVE;
+    
+    @Column(name = "created_at", nullable = false, updatable = false)
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+    
+    @Column(name = "updated_at", nullable = false)
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
+    
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
+    
+    /**
+     * Check if permission is active and can be used
+     */
+    public boolean isActive() {
+        return EntityStatus.ACTIVE.equals(this.status);
+    }
+    
+    /**
+     * Check if permission is blocked (temporarily disabled)
+     */
+    public boolean isBlocked() {
+        return EntityStatus.BLOCKED.equals(this.status);
+    }
+    
+    /**
+     * Check if permission is disabled (requires admin intervention)
+     */
+    public boolean isDisabled() {
+        return EntityStatus.DISABLED.equals(this.status);
+    }
+    
+    /**
+     * Get permission identifier for checking
+     */
+    public String getPermissionIdentifier() {
+        return realm.getName() + ":" + name;
+    }
+    
+    /**
+     * Check if this permission matches a resource and action
+     */
+    public boolean matches(String resource, String action) {
+        return this.resource.equalsIgnoreCase(resource) && 
+               this.action.equalsIgnoreCase(action);
+    }
+    
+    /**
+     * Generate permission name from resource and action
+     */
+    public static String generatePermissionName(String resource, String action) {
+        return resource.toUpperCase() + "_" + action.toUpperCase();
+    }
+    
+    /**
+     * Validate that the permission name matches the resource and action
+     */
+    public boolean isNameValid() {
+        String expectedName = generatePermissionName(resource, action);
+        return expectedName.equals(name.toUpperCase());
+    }
+}

@@ -1,7 +1,6 @@
 package com.open.rbac.openrbac.config;
 
 import lombok.RequiredArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -110,7 +109,6 @@ public class SecurityConfig {
 
             } catch (Exception e) {
                 System.out.println("❌ JWT decoding failed: " + e.getMessage());
-                e.printStackTrace();
                 throw new JwtException("JWT validation failed: " + e.getMessage(), e);
             }
         };

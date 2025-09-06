@@ -1,5 +1,7 @@
 package com.open.rbac.openrbac.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -9,7 +11,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 /**
  * User entity for RBAC system
@@ -41,7 +42,7 @@ public class User {
     private String keycloakUserId;
 
     // === RBAC REALM ===
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "realm_id", nullable = false)
     private Realm realm;
 
@@ -55,9 +56,10 @@ public class User {
     @Email(message = "Invalid email format")
     private String email;
 
+    @Column(nullable = false)
     private String username;
 
-    // === STATUS ===
+    // === RBAC STATUS ===
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     @Builder.Default
@@ -93,23 +95,22 @@ public class User {
      * Get display name for UI purposes
      */
     public String getDisplayName() {
-        // Full name if both parts exist
         if (firstName != null && lastName != null) {
             return firstName + " " + lastName;
+        } else if (firstName != null) {
+            return firstName;
+        } else if (username != null) {
+            return username;
+        } else {
+            return email;
         }
-        // Fallback chain
-        return Optional.ofNullable(firstName)
-            .or(() -> Optional.ofNullable(username))
-            .or(() -> Optional.ofNullable(email))
-            .orElse("");
     }
-    
 
     /**
      * Get username for display purposes
      */
     public String getDisplayUsername() {
-        return Optional.ofNullable(this.username).orElse(this.email);
+        return this.username != null ? this.username : this.email;
     }
 
     /**
@@ -124,23 +125,6 @@ public class User {
      */
     public boolean isAccountNonLocked() {
         return status != EntityStatus.BLOCKED && status != EntityStatus.DISABLED;
-    }
-
-    /**
-     * Check if user is enabled for RBAC operations
-     */
-    public boolean isEnabled() {
-        return status == EntityStatus.ACTIVE && isAccountNonExpired() &&
-                (realm == null || realm.isActive());
-    }
-
-    /**
-     * Check if user is active in their realm
-     */
-    public boolean isActiveInRealm() {
-        return status == EntityStatus.ACTIVE &&
-                realm != null && realm.isActive() &&
-                isAccountNonExpired();
     }
 
 }
