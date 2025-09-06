@@ -1,6 +1,6 @@
 package com.open.rbac.openrbac.config;
 
-
+import com.open.rbac.openrbac.responses.ErrorResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -12,139 +12,91 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-
-import com.open.rbac.openrbac.responses.ErrorResponse;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
-/**
- * Global exception handler to catch and properly format exceptions
- * This prevents Spring Security from converting all exceptions to 401 Unauthorized
- */
-@RestControllerAdvice
+import java.util.Date;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
 @Slf4j
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     /**
-     * Handle validation errors from @Valid annotations
+     * Helper method to build a consistent ErrorResponse.
      */
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationExceptions(
-            MethodArgumentNotValidException ex, WebRequest request) {
-        
-        Map<String, String> errors = new HashMap<>();
-        ex.getBindingResult().getAllErrors().forEach((error) -> {
-            String fieldName = ((FieldError) error).getField();
-            String errorMessage = error.getDefaultMessage();
-            errors.put(fieldName, errorMessage);
-        });
-
+    private ResponseEntity<ErrorResponse> buildResponse(String message, HttpStatus status, WebRequest request,
+            Map<String, String> errors) {
         ErrorResponse errorResponse = ErrorResponse.builder()
-                .message("Validation failed")
-                .status(HttpStatus.BAD_REQUEST.value())
+                .message(message)
+                .status(status.value())
                 .timestamp(new Date())
-                .errors(errors)  // Use errors field for backward compatibility
-                .path(request.getDescription(false))
+                .path(((ServletWebRequest) request).getRequest().getRequestURI())
+                .errors(errors)
                 .build();
+        return ResponseEntity.status(status).body(errorResponse);
+    }
+
+    // ==================== Validation Exceptions ====================
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex,
+            WebRequest request) {
+        Map<String, String> errors = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
 
         log.warn("Validation error: {}", errors);
-        return ResponseEntity.badRequest().body(errorResponse);
+        return buildResponse("Validation failed", HttpStatus.BAD_REQUEST, request, errors);
     }
 
-    /**
-     * Handle constraint violation exceptions
-     */
     @ExceptionHandler(ConstraintViolationException.class)
-    public ResponseEntity<ErrorResponse> handleConstraintViolationException(
-            ConstraintViolationException ex, WebRequest request) {
-        
-        Map<String, String> errors = new HashMap<>();
-        ex.getConstraintViolations().forEach(violation -> {
-            String fieldName = violation.getPropertyPath().toString();
-            String errorMessage = violation.getMessage();
-            errors.put(fieldName, errorMessage);
-        });
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message("Constraint violation")
-                .status(HttpStatus.BAD_REQUEST.value())
-                .timestamp(new Date())
-                .errors(errors)  // Use errors field for backward compatibility
-                .path(request.getDescription(false))
-                .build();
+    public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex,
+            WebRequest request) {
+        Map<String, String> errors = ex.getConstraintViolations()
+                .stream()
+                .collect(Collectors.toMap(v -> v.getPropertyPath().toString(), v -> v.getMessage()));
 
         log.warn("Constraint violation: {}", errors);
-        return ResponseEntity.badRequest().body(errorResponse);
+        return buildResponse("Constraint violation", HttpStatus.BAD_REQUEST, request, errors);
     }
 
-    /**
-     * Handle entity not found exceptions
-     */
+    // ==================== Entity / Resource Not Found ====================
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleEntityNotFoundException(
-            EntityNotFoundException ex, WebRequest request) {
-        
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage() != null ? ex.getMessage() : "Entity not found")
-                .status(HttpStatus.NOT_FOUND.value())
-                .timestamp(new Date())
-                .path(request.getDescription(false))
-                .build();
-
+    public ResponseEntity<ErrorResponse> handleEntityNotFound(EntityNotFoundException ex, WebRequest request) {
         log.warn("Entity not found: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        return buildResponse(Optional.ofNullable(ex.getMessage()).orElse("Entity not found"), HttpStatus.NOT_FOUND,
+                request, null);
     }
 
-    /**
-     * Handle illegal argument exceptions
-     */
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
-            IllegalArgumentException ex, WebRequest request) {
-        
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage() != null ? ex.getMessage() : "Invalid argument")
-                .status(HttpStatus.BAD_REQUEST.value())
-                .timestamp(new Date())
-                .path(request.getDescription(false))
-                .build();
-
+    // ==================== Illegal Argument / State ====================
+    @ExceptionHandler({ IllegalArgumentException.class })
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
         log.warn("Illegal argument: {}", ex.getMessage());
-        return ResponseEntity.badRequest().body(errorResponse);
+        return buildResponse(Optional.ofNullable(ex.getMessage()).orElse("Invalid argument"), HttpStatus.BAD_REQUEST,
+                request, null);
     }
 
-    /**
-     * Handle illegal state exceptions
-     */
-    @ExceptionHandler(IllegalStateException.class)
-    public ResponseEntity<ErrorResponse> handleIllegalStateException(
-            IllegalStateException ex, WebRequest request) {
-        
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage() != null ? ex.getMessage() : "Invalid state")
-                .status(HttpStatus.CONFLICT.value())
-                .timestamp(new Date())
-                .path(request.getDescription(false))
-                .build();
-
+    @ExceptionHandler({ IllegalStateException.class })
+    public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex, WebRequest request) {
         log.warn("Illegal state: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        return buildResponse(Optional.ofNullable(ex.getMessage()).orElse("Invalid state"), HttpStatus.CONFLICT, request,
+                null);
     }
 
-    /**
-     * Handle data integrity violation exceptions (database constraints)
-     */
+    // ==================== Data Integrity ====================
     @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrityViolationException(
-            DataIntegrityViolationException ex, WebRequest request) {
-        
+    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex,
+            WebRequest request) {
         String message = "Data integrity violation";
+
         if (ex.getMessage() != null) {
             if (ex.getMessage().contains("duplicate key")) {
                 message = "Duplicate entry - record already exists";
@@ -155,139 +107,60 @@ public class GlobalExceptionHandler {
             }
         }
 
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(message)
-                .status(HttpStatus.CONFLICT.value())
-                .timestamp(new Date())
-                .path(request.getDescription(false))
-                .build();
-
         log.warn("Data integrity violation: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
+        return buildResponse(message, HttpStatus.CONFLICT, request, null);
     }
 
-    /**
-     * Handle method argument type mismatch (e.g., passing string where number expected)
-     */
+    // ==================== Request / Type Exceptions ====================
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
-            MethodArgumentTypeMismatchException ex, WebRequest request) {
-        
-        String message = String.format("Invalid value '%s' for parameter '%s'. Expected type: %s", 
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
+            WebRequest request) {
+        String message = String.format("Invalid value '%s' for parameter '%s'. Expected type: %s",
                 ex.getValue(), ex.getName(), ex.getRequiredType().getSimpleName());
 
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(message)
-                .status(HttpStatus.BAD_REQUEST.value())
-                .timestamp(new Date())
-                .path(request.getDescription(false))
-                .build();
-
         log.warn("Method argument type mismatch: {}", message);
-        return ResponseEntity.badRequest().body(errorResponse);
+        return buildResponse(message, HttpStatus.BAD_REQUEST, request, null);
     }
 
-    /**
-     * Handle malformed JSON requests
-     */
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<ErrorResponse> handleHttpMessageNotReadableException(
-            HttpMessageNotReadableException ex, WebRequest request) {
-        
+    public ResponseEntity<ErrorResponse> handleMalformedJson(HttpMessageNotReadableException ex, WebRequest request) {
         String message = "Malformed JSON request";
         if (ex.getMessage() != null && ex.getMessage().contains("JSON parse error")) {
             message = "Invalid JSON format in request body";
         }
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(message)
-                .status(HttpStatus.BAD_REQUEST.value())
-                .timestamp(new Date())
-                .path(request.getDescription(false))
-                .build();
-
-        log.warn("HTTP message not readable: {}", ex.getMessage());
-        return ResponseEntity.badRequest().body(errorResponse);
+        log.warn("Malformed JSON: {}", ex.getMessage());
+        return buildResponse(message, HttpStatus.BAD_REQUEST, request, null);
     }
 
-    /**
-     * Handle security exceptions (but don't override Spring Security's handling)
-     * This is mainly for logging purposes
-     */
-    @ExceptionHandler(SecurityException.class)
-    public ResponseEntity<ErrorResponse> handleSecurityException(
-            SecurityException ex, WebRequest request) {
-        
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage() != null ? ex.getMessage() : "Security violation")
-                .status(HttpStatus.FORBIDDEN.value())
-                .timestamp(new Date())
-                .path(request.getDescription(false))
-                .build();
-
+    // ==================== Security Exceptions ====================
+    @ExceptionHandler({ AuthenticationException.class, AccessDeniedException.class, SecurityException.class })
+    public ResponseEntity<ErrorResponse> handleSecurityExceptions(Exception ex, WebRequest request) {
         log.warn("Security exception: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
+        return buildResponse("Access denied", HttpStatus.FORBIDDEN, request, null);
     }
 
-    /**
-     * Handle runtime exceptions (catch-all for unexpected errors)
-     */
+    // ==================== Runtime / Catch-all ====================
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(NoResourceFoundException ex, WebRequest request) {
+        log.warn("No resource found: {}", ex.getMessage());
+        return buildResponse(
+                "API endpoint not found",
+                HttpStatus.NOT_FOUND,
+                request,
+                null);
+    }
+
     @ExceptionHandler(RuntimeException.class)
-    public ResponseEntity<ErrorResponse> handleRuntimeException(
-            RuntimeException ex, WebRequest request) {
-        
-        // Don't handle authentication/authorization exceptions here
-        // Let Spring Security handle them
-        if (ex instanceof AuthenticationException || ex instanceof AccessDeniedException) {
-            // For Spring Security exceptions, return appropriate error response
-            // but don't re-throw as it causes compilation issues
-            ErrorResponse errorResponse = ErrorResponse.builder()
-                    .message("Access denied")
-                    .status(HttpStatus.FORBIDDEN.value())
-                    .timestamp(new Date())
-                    .path(request.getDescription(false))
-                    .build();
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
-        }
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message(ex.getMessage() != null ? ex.getMessage() : "An unexpected error occurred")
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .timestamp(new Date())
-                .path(request.getDescription(false))
-                .build();
-
+    public ResponseEntity<ErrorResponse> handleRuntimeException(RuntimeException ex, WebRequest request) {
         log.error("Runtime exception: {}", ex.getMessage(), ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        return buildResponse(Optional.ofNullable(ex.getMessage()).orElse("An unexpected error occurred"),
+                HttpStatus.INTERNAL_SERVER_ERROR, request, null);
     }
 
-    /**
-     * Handle all other exceptions (ultimate catch-all)
-     */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(
-            Exception ex, WebRequest request) {
-        
-        // Don't handle authentication/authorization exceptions here
-        if (ex instanceof AuthenticationException || ex instanceof AccessDeniedException) {
-            // For Spring Security exceptions, return appropriate error response
-            ErrorResponse errorResponse = ErrorResponse.builder()
-                    .message("Access denied")
-                    .status(HttpStatus.FORBIDDEN.value())
-                    .timestamp(new Date())
-                    .path(request.getDescription(false))
-                    .build();
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
-        }
-
-        ErrorResponse errorResponse = ErrorResponse.builder()
-                .message("An internal server error occurred")
-                .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
-                .timestamp(new Date())
-                .path(request.getDescription(false))
-                .build();
-
+    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, WebRequest request) {
         log.error("Unexpected exception: {}", ex.getMessage(), ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        return buildResponse("An internal server error occurred", HttpStatus.INTERNAL_SERVER_ERROR, request, null);
     }
 }

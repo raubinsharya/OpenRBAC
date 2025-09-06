@@ -19,18 +19,22 @@ public record RealmDTO(
         LocalDateTime updatedAt,
         List<UserDTO> users) {
     public static RealmDTO from(Realm realm) {
-        return new RealmDTO(
-                realm.getId(),
-                realm.getName(),
-                realm.getRealmId(),
-                realm.getDescription(),
-                realm.getStatus(),
-                realm.getCreatedAt(),
-                realm.getUpdatedAt(),
-                null);
+        return from(realm, false);
     }
 
     public static RealmDTO fromWithUsers(Realm realm) {
+        return from(realm, true);
+    }
+
+    private static RealmDTO from(Realm realm, boolean includeUsers) {
+        List<UserDTO> userDTOs = Optional.of(includeUsers)
+                .filter(Boolean::booleanValue) // only proceed if true
+                .map(flag -> Optional.ofNullable(realm.getUsers())
+                        .orElseGet(List::of)
+                        .stream()
+                        .map(UserDTO::from)
+                        .toList())
+                .orElseGet(List::of);
         return new RealmDTO(
                 realm.getId(),
                 realm.getName(),
@@ -39,8 +43,6 @@ public record RealmDTO(
                 realm.getStatus(),
                 realm.getCreatedAt(),
                 realm.getUpdatedAt(),
-                Optional.ofNullable(realm.getUsers())
-                        .map(users -> users.stream().map(UserDTO::from).toList())
-                        .orElse(List.of()));
+                userDTOs);
     }
 }
