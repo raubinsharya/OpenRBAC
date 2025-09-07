@@ -1,5 +1,9 @@
 package com.open.rbac.openrbac.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -27,8 +31,13 @@ import com.open.rbac.openrbac.enums.EntityStatus;
         @Index(name = "idx_permission_resource_action", columnList = "resource, action"),
         @Index(name = "idx_permission_status", columnList = "status")
 }, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_permission_realm_name", columnNames = { "realm_id", "name" })
+        @UniqueConstraint(name = "uk_permission_realm_name", columnNames = {"realm_id", "name"})
 })
+
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id"
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -38,10 +47,6 @@ public class Permission {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "realm_id", nullable = false)
-    private Realm realm;
 
     /**
      * Permission name following RESOURCE_ACTION convention
@@ -86,36 +91,12 @@ public class Permission {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    /**
-     * Roles that have this permission (many-to-many relationship - inverse side)
-     */
-    @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
-    @Builder.Default
-    private Set<Role> roles = new HashSet<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "realm_id", nullable = false)
+    private Realm realm;
 
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Check if permission is active and can be used
-     */
-    public boolean isActive() {
-        return EntityStatus.ACTIVE.equals(this.status);
-    }
-
-    /**
-     * Check if permission is blocked (temporarily disabled)
-     */
-    public boolean isBlocked() {
-        return EntityStatus.BLOCKED.equals(this.status);
-    }
-
-    /**
-     * Check if permission is disabled (requires admin intervention)
-     */
-    public boolean isDisabled() {
-        return EntityStatus.DISABLED.equals(this.status);
     }
 }

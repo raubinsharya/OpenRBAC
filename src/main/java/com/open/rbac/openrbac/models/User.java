@@ -1,5 +1,8 @@
 package com.open.rbac.openrbac.models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -9,6 +12,9 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Set;
+
 
 /**
  * User entity for RBAC system
@@ -26,9 +32,60 @@ import java.time.LocalDateTime;
         @Index(name = "idx_user_status", columnList = "status"),
         @Index(name = "idx_user_expiry", columnList = "account_expiry_date")
 }, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_realm_email", columnNames = { "realm_id", "email" }),
-        @UniqueConstraint(name = "uk_user_keycloak_id", columnNames = { "keycloak_user_id" })
+        @UniqueConstraint(name = "uk_user_realm_email", columnNames = {"realm_id", "email"}),
+        @UniqueConstraint(name = "uk_user_keycloak_id", columnNames = {"keycloak_user_id"})
 })
+
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id"
+)
+@NamedEntityGraph(
+        name = "User.withRealmRolesPermissions",
+        attributeNodes = {
+                @NamedAttributeNode(value = "realm", subgraph = "realmSubgraph"),
+                @NamedAttributeNode(value = "roles", subgraph = "roleSubgraph"),
+                @NamedAttributeNode(value = "permissions", subgraph = "permissionSubgraph")
+        },
+        subgraphs = {
+                // Realm (only load essentials)
+                @NamedSubgraph(
+                        name = "realmSubgraph",
+                        attributeNodes = {
+                                @NamedAttributeNode("id"),
+                                @NamedAttributeNode("name"),
+                                @NamedAttributeNode("status")
+                        }
+                ),
+                // Role (but we DO NOT fetch role.users to prevent recursion)
+                @NamedSubgraph(
+                        name = "roleSubgraph",
+                        attributeNodes = {
+                                @NamedAttributeNode("id"),
+                                @NamedAttributeNode("name"),
+                                @NamedAttributeNode("status"),
+                                @NamedAttributeNode(value = "permissions", subgraph = "rolePermissionSubgraph")
+                        }
+                ),
+                // Permission
+                @NamedSubgraph(
+                        name = "permissionSubgraph",
+                        attributeNodes = {
+                                @NamedAttributeNode("id"),
+                                @NamedAttributeNode("name"),
+                                @NamedAttributeNode("status")
+                        }
+                ),
+                @NamedSubgraph(
+                        name = "rolePermissionSubgraph",
+                        attributeNodes = {
+                                @NamedAttributeNode("id"),
+                                @NamedAttributeNode("name"),
+                                @NamedAttributeNode("status")
+                        }
+                )
+        }
+)
 public class User {
 
     @Id
@@ -43,9 +100,10 @@ public class User {
     @Column(nullable = false)
     private String firstName;
 
+    @Column
     private String lastName;
 
-    @Column(nullable = true)
+    @Column()
     @Email(message = "Invalid email format")
     private String email;
 
@@ -74,6 +132,25 @@ public class User {
     @JoinColumn(name = "realm_id", nullable = false)
     private Realm realm;
 
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"), indexes = {
+            @Index(name = "idx_user_role", columnList = "user_id"),
+            @Index(name = "idx_role_id", columnList = "role_id")
+    }, uniqueConstraints = {
+            @UniqueConstraint(name = "uk_user_role", columnNames = {"user_id", "role_id"})
+    })
+    private Set<Role> roles;
+
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinTable(name = "user_permissions", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"), indexes = {
+            @Index(name = "idx_user_permission", columnList = "user_id"),
+            @Index(name = "idx_permission_id", columnList = "permission_id")
+    }, uniqueConstraints = {
+            @UniqueConstraint(name = "uk_user_permission", columnNames = {"user_id", "permission_id"})
+    })
+    private Set<Permission> permissions;
+
+
     // === LIFECYCLE CALLBACKS ===
     @PrePersist
     protected void onCreate() {
@@ -87,11 +164,7 @@ public class User {
         updatedAt = LocalDateTime.now();
     }
 
-    // === UTILITY METHODS ===
 
-    /**
-     * Get display name for UI purposes
-     */
     public String getDisplayName() {
         if (firstName != null && lastName != null) {
             return firstName + " " + lastName;
@@ -103,26 +176,4 @@ public class User {
             return email;
         }
     }
-
-    /**
-     * Get username for display purposes
-     */
-    public String getDisplayUsername() {
-        return this.username != null ? this.username : this.email;
-    }
-
-    /**
-     * Check if account is not expired
-     */
-    public boolean isAccountNonExpired() {
-        return accountExpiryDate == null || accountExpiryDate.isAfter(LocalDateTime.now());
-    }
-
-    /**
-     * Check if account is not locked (for RBAC purposes)
-     */
-    public boolean isAccountNonLocked() {
-        return status != EntityStatus.BLOCKED && status != EntityStatus.DISABLED;
-    }
-
 }

@@ -15,16 +15,13 @@ public class RoleController {
 
     private final RoleService roleService;
 
-    /**
-     * Get all roles with optional filtering
-     */
     @GetMapping
     public ResponseEntity<?> getAllRoles(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) Boolean isSystemRole,
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt, @PathVariable String realmId) {
 
         var roles = roleService.getAllRoles(status, isSystemRole, page, size);
         return ResponseEntity.ok(roles);
@@ -33,7 +30,7 @@ public class RoleController {
     @GetMapping("{id}")
     public ResponseEntity<?> getRoleById(
             @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt, @PathVariable String realmId) {
 
         var role = roleService.getRoleById(id);
         return ResponseEntity.ok(role);

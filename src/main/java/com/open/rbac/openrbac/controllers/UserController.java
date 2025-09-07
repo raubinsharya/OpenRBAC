@@ -20,15 +20,15 @@ public class UserController {
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0", required = false) int page,
             @RequestParam(defaultValue = "10", required = false) int size,
-            @AuthenticationPrincipal Jwt jwt) {
+            @AuthenticationPrincipal Jwt jwt, @PathVariable String realmId) {
         var users = userService.getAllUsers(status, page, size);
         return ResponseEntity.ok(users);
     }
 
     @GetMapping("{id}")
     public ResponseEntity<?> getUserById(
-        @PathVariable Long id,
-            @AuthenticationPrincipal Jwt jwt) {
+            @PathVariable Long id,
+            @AuthenticationPrincipal Jwt jwt, @PathVariable String realmId) {
         var user = userService.getUserById(id);
         return ResponseEntity.ok(user);
     }

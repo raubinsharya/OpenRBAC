@@ -59,20 +59,5 @@ public class UserPermission {
     @Column(name = "is_active", nullable = false)
     @Builder.Default
     private Boolean isActive = true;
-    
-    /**
-     * Check if permission grant is currently valid (not expired and active)
-     */
-    public boolean isValid() {
-        return Boolean.TRUE.equals(isActive) && 
-               (expiryDate == null || expiryDate.isAfter(LocalDateTime.now())) &&
-               (permission == null || permission.isActive());
-    }
-    
-    /**
-     * Check if permission grant has expired
-     */
-    public boolean isExpired() {
-        return expiryDate != null && expiryDate.isBefore(LocalDateTime.now());
-    }
+
 }

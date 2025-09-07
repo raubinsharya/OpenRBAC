@@ -95,19 +95,4 @@ public class GroupRole {
     @Column(name = "max_inheritance_depth")
     private Integer maxInheritanceDepth;
 
-    /**
-     * Check if role assignment is currently valid (not expired and active)
-     */
-    public boolean isValid() {
-        return Boolean.TRUE.equals(isActive) &&
-                (expiryDate == null || expiryDate.isAfter(LocalDateTime.now())) &&
-                (role == null || role.isActive());
-    }
-
-    /**
-     * Check if role assignment has expired
-     */
-    public boolean isExpired() {
-        return expiryDate != null && expiryDate.isBefore(LocalDateTime.now());
-    }
 }

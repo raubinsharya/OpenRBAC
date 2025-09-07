@@ -1,7 +1,9 @@
 package com.open.rbac.openrbac.models;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
@@ -20,11 +22,14 @@ import java.util.List;
         @Index(name = "idx_realm_id", columnList = "realm_id"),
         @Index(name = "idx_realm_status", columnList = "status")
 })
+@JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id"
+)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@JsonIgnoreProperties({ "hibernateLazyInitializer", "handler" })
 public class Realm {
 
     @Id
@@ -79,26 +84,5 @@ public class Realm {
     @PreUpdate
     protected void onUpdate() {
         this.updatedAt = LocalDateTime.now();
-    }
-
-    /**
-     * Check if realm is active and can be used
-     */
-    public boolean isActive() {
-        return EntityStatus.ACTIVE.equals(this.status);
-    }
-
-    /**
-     * Check if realm is blocked (temporarily disabled)
-     */
-    public boolean isBlocked() {
-        return EntityStatus.BLOCKED.equals(this.status);
-    }
-
-    /**
-     * Check if realm is disabled (requires admin intervention)
-     */
-    public boolean isDisabled() {
-        return EntityStatus.DISABLED.equals(this.status);
     }
 }

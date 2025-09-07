@@ -95,21 +95,5 @@ public class GroupPermission {
      */
     @Column(name = "max_inheritance_depth")
     private Integer maxInheritanceDepth;
-    
-    /**
-     * Check if permission assignment is currently valid (not expired and active)
-     */
-    public boolean isValid() {
-        return Boolean.TRUE.equals(isActive) && 
-               (expiryDate == null || expiryDate.isAfter(LocalDateTime.now())) &&
-               (permission == null || permission.isActive());
-    }
-    
-    /**
-     * Check if permission assignment has expired
-     */
-    public boolean isExpired() {
-        return expiryDate != null && expiryDate.isBefore(LocalDateTime.now());
-    }
 
 }
