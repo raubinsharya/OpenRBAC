@@ -1,19 +1,17 @@
 package com.open.rbac.openrbac.models;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.*;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
+
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 
 /**
@@ -40,56 +38,11 @@ import java.util.Set;
         generator = ObjectIdGenerators.PropertyGenerator.class,
         property = "id"
 )
-@NamedEntityGraph(
-        name = "User.withRealmRolesPermissions",
-        attributeNodes = {
-                @NamedAttributeNode(value = "realm", subgraph = "realmSubgraph"),
-                @NamedAttributeNode(value = "roles", subgraph = "roleSubgraph"),
-                @NamedAttributeNode(value = "permissions", subgraph = "permissionSubgraph")
-        },
-        subgraphs = {
-                // Realm (only load essentials)
-                @NamedSubgraph(
-                        name = "realmSubgraph",
-                        attributeNodes = {
-                                @NamedAttributeNode("id"),
-                                @NamedAttributeNode("name"),
-                                @NamedAttributeNode("status")
-                        }
-                ),
-                // Role (but we DO NOT fetch role.users to prevent recursion)
-                @NamedSubgraph(
-                        name = "roleSubgraph",
-                        attributeNodes = {
-                                @NamedAttributeNode("id"),
-                                @NamedAttributeNode("name"),
-                                @NamedAttributeNode("status"),
-                                @NamedAttributeNode(value = "permissions", subgraph = "rolePermissionSubgraph")
-                        }
-                ),
-                // Permission
-                @NamedSubgraph(
-                        name = "permissionSubgraph",
-                        attributeNodes = {
-                                @NamedAttributeNode("id"),
-                                @NamedAttributeNode("name"),
-                                @NamedAttributeNode("status")
-                        }
-                ),
-                @NamedSubgraph(
-                        name = "rolePermissionSubgraph",
-                        attributeNodes = {
-                                @NamedAttributeNode("id"),
-                                @NamedAttributeNode("name"),
-                                @NamedAttributeNode("status")
-                        }
-                )
-        }
-)
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     // === KEYCLOAK INTEGRATION ===
@@ -128,7 +81,7 @@ public class User {
     private LocalDateTime updatedAt;
 
     // === RBAC REALM ===
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "realm_id", nullable = false)
     private Realm realm;
 
@@ -139,6 +92,7 @@ public class User {
     }, uniqueConstraints = {
             @UniqueConstraint(name = "uk_user_role", columnNames = {"user_id", "role_id"})
     })
+    @JsonIgnore
     private Set<Role> roles;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
@@ -148,6 +102,7 @@ public class User {
     }, uniqueConstraints = {
             @UniqueConstraint(name = "uk_user_permission", columnNames = {"user_id", "permission_id"})
     })
+    @JsonIgnore
     private Set<Permission> permissions;
 
 

@@ -26,14 +26,23 @@ public class RealmController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getRealmById(@PathVariable Long id, @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(realmService.getRealmById(id));
+    public ResponseEntity<?> getRealmById(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Long id,
+            @RequestParam(required = false) boolean includeUsers,
+            @RequestParam(required = false) boolean includeRoles,
+            @RequestParam(required = false) boolean includePermissions) {
+        return ResponseEntity.ok(realmService.getRealmById(id, includeUsers, includeRoles, includePermissions));
     }
 
     @GetMapping("/realm-id/{realmId}")
-    public ResponseEntity<?> getRealmByRealmId(@PathVariable String realmId,
-            @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(realmService.getRealmByRealmId(realmId));
+    public ResponseEntity<?> getRealmByRealmId(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable String realmId,
+            @RequestParam(required = false) boolean includeUsers,
+            @RequestParam(required = false) boolean includeRoles,
+            @RequestParam(required = false) boolean includePermissions) {
+        return ResponseEntity.ok(realmService.getRealmByRealmId(realmId, includeUsers, includeRoles, includePermissions));
     }
 
 }

@@ -1,6 +1,9 @@
 package com.open.rbac.openrbac.controllers;
 
+import com.open.rbac.openrbac.RequestParams.UserFilterRequest;
+import com.open.rbac.openrbac.dtos.UserDTO;
 import com.open.rbac.openrbac.services.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
@@ -17,11 +20,9 @@ public class UserController {
 
     @GetMapping
     public ResponseEntity<?> getAllUsers(
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "0", required = false) int page,
-            @RequestParam(defaultValue = "10", required = false) int size,
+            @ModelAttribute @Valid UserFilterRequest userFilterRequest,
             @AuthenticationPrincipal Jwt jwt, @PathVariable String realmId) {
-        var users = userService.getAllUsers(status, page, size);
+        var users = userService.getAllUsers(userFilterRequest);
         return ResponseEntity.ok(users);
     }
 

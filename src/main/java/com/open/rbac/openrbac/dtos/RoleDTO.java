@@ -1,10 +1,12 @@
 package com.open.rbac.openrbac.dtos;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import com.open.rbac.openrbac.models.Role;
 
 import java.time.LocalDateTime;
 
+@JsonInclude(JsonInclude.Include.NON_EMPTY)
 public record RoleDTO(
         Long id,
         String name,

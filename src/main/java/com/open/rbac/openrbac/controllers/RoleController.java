@@ -1,5 +1,7 @@
 package com.open.rbac.openrbac.controllers;
 
+import com.open.rbac.openrbac.RequestParams.RoleFilterRequest;
+import com.open.rbac.openrbac.models.Role;
 import com.open.rbac.openrbac.services.RoleService;
 
 import lombok.RequiredArgsConstructor;
@@ -27,6 +29,13 @@ public class RoleController {
         return ResponseEntity.ok(roles);
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<?> searchRoles(@AuthenticationPrincipal Jwt jwt,
+                                         @PathVariable Long realmId,
+                                         @ModelAttribute RoleFilterRequest filter) {
+        return ResponseEntity.ok(roleService.searchRoles(realmId, filter));
+    }
+
     @GetMapping("{id}")
     public ResponseEntity<?> getRoleById(
             @PathVariable Long id,
@@ -34,5 +43,10 @@ public class RoleController {
 
         var role = roleService.getRoleById(id);
         return ResponseEntity.ok(role);
+    }
+
+    @PostMapping
+    public ResponseEntity<?> createRole(@PathVariable("realmId") Long id, @RequestBody Role role, @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(roleService.createRole(id, role));
     }
 }

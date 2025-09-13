@@ -7,10 +7,7 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.HashSet;
@@ -31,18 +28,16 @@ import com.open.rbac.openrbac.enums.EntityStatus;
 }, uniqueConstraints = {
         @UniqueConstraint(name = "uk_rbac_role_realm_name", columnNames = {"realm_id", "name"})
 })
-@JsonIdentityInfo(
-        generator = ObjectIdGenerators.PropertyGenerator.class,
-        property = "id"
-)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Role {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(nullable = false, length = 100)
@@ -75,11 +70,14 @@ public class Role {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "realm_id", nullable = false)
+    @JsonIgnore
     private Realm realm;
 
+    @ManyToMany(mappedBy = "roles")
+    @JsonIgnore
+    private Set<User> users;
     /**
      * Permissions associated with this role (many-to-many relationship)
      */
@@ -91,7 +89,7 @@ public class Role {
             @UniqueConstraint(name = "uk_role_permission", columnNames = {"role_id", "permission_id"})
     })
     @JsonIgnore
-    private Set<Permission> permissions;
+    private List<Permission> permissions;
 
     @PreUpdate
     protected void onUpdate() {

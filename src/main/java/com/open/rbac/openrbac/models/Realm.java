@@ -1,20 +1,15 @@
 package com.open.rbac.openrbac.models;
 
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+import com.fasterxml.jackson.annotation.*;
 import com.open.rbac.openrbac.enums.EntityStatus;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(name = "realms", indexes = {
@@ -30,10 +25,12 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Realm {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @Column(unique = true, nullable = false, length = 100)
@@ -67,19 +64,19 @@ public class Realm {
     // === BIDIRECTIONAL RELATIONSHIP ===
     @OneToMany(mappedBy = "realm", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore // Prevent infinite recursion and lazy loading issues
-    private List<User> users;
+    private Set<User> users;
 
     @OneToMany(mappedBy = "realm", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore // Prevent infinite recursion and lazy loading issues
-    private List<Role> roles;
+    private Set<Role> roles;
 
     @OneToMany(mappedBy = "realm", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore // Prevent infinite recursion and lazy loading issues
-    private List<Permission> permissions;
+    private Set<Permission> permissions;
 
     @OneToMany(mappedBy = "realm", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @JsonIgnore // Prevent infinite recursion and lazy loading issues
-    private List<Group> groups;
+    private Set<Group> groups;
 
     @PreUpdate
     protected void onUpdate() {

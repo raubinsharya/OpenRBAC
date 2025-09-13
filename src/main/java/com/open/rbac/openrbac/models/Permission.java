@@ -7,13 +7,9 @@ import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.Set;
 
 import com.open.rbac.openrbac.enums.EntityStatus;
@@ -31,21 +27,18 @@ import com.open.rbac.openrbac.enums.EntityStatus;
         @Index(name = "idx_permission_resource_action", columnList = "resource, action"),
         @Index(name = "idx_permission_status", columnList = "status")
 }, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_permission_realm_name", columnNames = {"realm_id", "name"})
+        @UniqueConstraint(name = "uk_permission_realm_name", columnNames = { "realm_id", "name" })
 })
-
-@JsonIdentityInfo(
-        generator = ObjectIdGenerators.PropertyGenerator.class,
-        property = "id"
-)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Permission {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     /**
@@ -91,8 +84,13 @@ public class Permission {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @ManyToMany(mappedBy = "permissions")
+    @JsonIgnore
+    private Set<User> users;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "realm_id", nullable = false)
+    @JsonIgnore
     private Realm realm;
 
     @PreUpdate
