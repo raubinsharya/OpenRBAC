@@ -20,7 +20,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -61,5 +63,15 @@ public class MeService {
                 .and(PermissionSpecification.hasUpdatedAfter(filter.getUpdatedAfter()));
         Pageable pageable = filter.toPageable();
         return PagedResponse.fromPage(permissionRepository.findAll(spec, pageable), PermissionDTO::from);
+    }
+
+    public List<RoleDTO> getMeRoles(String userName) {
+        Specification<Role> spec = Specification.allOf(RoleSpecification.ofUser(userName));
+        return roleRepository.findAll(spec).stream().map(RoleDTO::from).collect(Collectors.toList());
+    }
+
+    public List<PermissionDTO> getMePermissions(String userName) {
+        Specification<Permission> spec = Specification.allOf(PermissionSpecification.ofUser(userName));
+        return permissionRepository.findAll(spec).stream().map(PermissionDTO::from).collect(Collectors.toList());
     }
 }

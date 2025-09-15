@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.services;
 
 import com.open.rbac.openrbac.RequestParams.RoleFilterRequest;
+import com.open.rbac.openrbac.annotations.RequireAnyRole;
 import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.dtos.RoleDTO;
 import com.open.rbac.openrbac.models.Realm;
@@ -45,6 +46,7 @@ public class RoleService {
         return roleRepository.save(role);
     }
 
+    @RequireAnyRole(value = {"realm-admin"})
     @Transactional(readOnly = true)
     public PagedResponse<RoleDTO> searchRoles(Long realmId, RoleFilterRequest filter) {
         Specification<Role> spec = Specification.allOf(RoleSpecification.hasRealm(realmId))

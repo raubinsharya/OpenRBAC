@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.specifications;
 
 import com.open.rbac.openrbac.models.Role;
+import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
@@ -76,7 +77,7 @@ public class RoleSpecification {
         return (root, query, cb) -> {
             if (userName == null || userName.isEmpty()) return cb.conjunction();
             // Join with users collection
-            var users = root.join("users");
+            var users = root.join("users", JoinType.INNER);
             return cb.equal(cb.lower(users.get("username")), userName.toLowerCase());
         };
     }

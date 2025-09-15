@@ -1,16 +1,14 @@
 package com.open.rbac.openrbac.annotations;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 /**
  * Annotation to require ANY of the specified roles
  * User must have at least one of the listed roles (OR logic)
  */
-@Target(ElementType.METHOD)
+@Target({ElementType.METHOD,  ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
+@Documented
 public @interface RequireAnyRole {
 
     /**

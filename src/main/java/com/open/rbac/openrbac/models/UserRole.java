@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
        uniqueConstraints = {
            @UniqueConstraint(name = "uk_user_role", columnNames = {"user_id", "role_id"})
        })
-@Data
+@Data 
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
