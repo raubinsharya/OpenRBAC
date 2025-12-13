@@ -31,8 +31,8 @@ public class RoleController {
 
     @GetMapping("/search")
     public ResponseEntity<?> searchRoles(@AuthenticationPrincipal Jwt jwt,
-                                         @PathVariable Long realmId,
-                                         @ModelAttribute RoleFilterRequest filter) {
+            @PathVariable Long realmId,
+            @ModelAttribute RoleFilterRequest filter) {
         return ResponseEntity.ok(roleService.searchRoles(realmId, filter));
     }
 
@@ -46,7 +46,8 @@ public class RoleController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createRole(@PathVariable("realmId") Long id, @RequestBody Role role, @AuthenticationPrincipal Jwt jwt) {
+    public ResponseEntity<?> createRole(@PathVariable("realmId") Long id, @RequestBody Role role,
+            @AuthenticationPrincipal Jwt jwt) {
         return ResponseEntity.ok(roleService.createRole(id, role));
     }
 }

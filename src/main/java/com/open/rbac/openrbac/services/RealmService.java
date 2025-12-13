@@ -46,6 +46,7 @@ public class RealmService {
 
     public Optional<RealmDTO> getRealmByRealmId(String realmId, boolean includeUsers, boolean includeRoles, boolean includePermissions) {
         Specification<Realm> spec = Specification.allOf(RealmSpecification.hasRealmId(realmId))
+                .and(RealmSpecification.includeUsers(includeUsers))
                 .and(RealmSpecification.includeRoles(includeRoles))
                 .and(RealmSpecification.includePermissions(includePermissions));
         return realmRepository.findAll(spec).stream().findFirst().map(r -> RealmDTO.from(r, includeUsers, includeRoles, includePermissions));
