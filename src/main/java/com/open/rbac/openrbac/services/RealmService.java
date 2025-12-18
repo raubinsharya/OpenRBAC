@@ -1,5 +1,6 @@
 package com.open.rbac.openrbac.services;
 
+import com.open.rbac.openrbac.RequestParams.RealmFilterRequest;
 import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.dtos.RealmDTO;
 import com.open.rbac.openrbac.dtos.UserDTO;
@@ -7,6 +8,7 @@ import com.open.rbac.openrbac.models.Realm;
 import com.open.rbac.openrbac.models.User;
 import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
+import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.RealmSpecification;
 
 import com.open.rbac.openrbac.specifications.UserSpecification;
@@ -29,11 +31,12 @@ public class RealmService {
     private final RealmRepository realmRepository;
     private final UserRepository userRepository;
 
-    public PagedResponse<RealmDTO> getAllRealms(String status, int page, int size) {
+    public PagedResponse<RealmDTO> getAllRealms(String status, RealmFilterRequest realmFilterRequest) {
         Specification<Realm> spec = Specification
-                .allOf(RealmSpecification.hasStatus(status));
-        Pageable pageable = PageRequest.of(page, size);
-        return PagedResponse.fromPage(this.realmRepository.findAll(spec, pageable), RealmDTO::from);
+                .allOf(RealmSpecification.hasStatus(status))
+                .and(RealmSpecification.searchByNameIgnoreCase(realmFilterRequest.getName()))
+                .and(BaseSpecification.withBaseFilters(realmFilterRequest));
+        return PagedResponse.fromPage(this.realmRepository.findAll(spec, realmFilterRequest.toPageable()), RealmDTO::from);
     }
 
     public Optional<RealmDTO> getRealmById(Long id, boolean includeUsers, boolean includeRoles, boolean includePermissions) {

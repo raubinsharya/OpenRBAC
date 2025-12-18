@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.specifications;
 
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.open.rbac.openrbac.models.User;
@@ -18,6 +19,17 @@ public class UserSpecification {
 
     }
 
+    public static Specification<User> hasUserId(Long userId, Long realmId) {
+        return (root, query, cb) -> {
+            if (userId == null)
+                return null;
+            var realmJoin = root.join("realm", JoinType.INNER);
+            Predicate userPredicate = cb.equal(root.get("id"), userId);
+            Predicate realmPredicate = cb.equal(realmJoin.get("id"), realmId);
+
+            return cb.and(userPredicate, realmPredicate);
+        };
+    }
     public static Specification<User> hasUserName(String userName) {
         return (root, query, cb) -> {
             if (userName == null || userName.trim().isEmpty())

@@ -7,6 +7,11 @@ import java.time.LocalDateTime;
 
 public class PermissionSpecification {
 
+    public static  Specification<Permission> hasId(Long permissionId) {
+        if(permissionId == null) return null;
+        return (root, query, cb) -> cb.equal(root.get("id"), permissionId);
+    }
+
     public static Specification<Permission> hasStatus(String status) {
         return (root, query, cb) -> {
             if (status == null || status.trim().isEmpty())
@@ -85,6 +90,14 @@ public class PermissionSpecification {
         return (root, query, cb) -> {
             if (dateTime == null) return null;
             return cb.lessThan(root.get("updatedAt"), dateTime);
+        };
+    }
+
+    public static Specification<Permission> hasRealm(Long realmId) {
+        return (root, query, cb) -> {
+            if (realmId == null) return null;
+            var realmJoin = root.join("realm");
+            return cb.equal(realmJoin.get("id"), realmId);
         };
     }
 }

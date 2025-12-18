@@ -46,8 +46,8 @@ public class Permission {
      * Examples: BOOK_CREATE, USER_EDIT, REPORT_VIEW, ADMIN_MANAGE
      */
     @Column(nullable = false, length = 100)
-    @NotBlank(message = "Permission name is required")
-    @Size(min = 3, max = 100, message = "Permission name must be between 3 and 100 characters")
+    @NotBlank(message = "Name is required")
+    @Size(min = 3, max = 100, message = "Name must be between 3 and 100 characters")
     private String name;
 
     /**

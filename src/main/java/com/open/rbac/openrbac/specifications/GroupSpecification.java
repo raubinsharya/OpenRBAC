@@ -1,5 +1,6 @@
 package com.open.rbac.openrbac.specifications;
 
+import com.open.rbac.openrbac.models.Group;
 import com.open.rbac.openrbac.models.Role;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -7,9 +8,9 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 
-public class RoleSpecification {
+public class GroupSpecification {
 
-    public static Specification<Role> hasId(Long roleId) {
+    public static Specification<Group> hasId(Long roleId) {
         return (root, query, cb) -> {
             if (roleId == null)
                 return null;
@@ -17,7 +18,7 @@ public class RoleSpecification {
         };
     }
 
-    public static Specification<Role> hasStatus(String status) {
+    public static Specification<Group> hasStatus(String status) {
         return (root, query, cb) -> {
             if (status == null || status.trim().isEmpty())
                 return null;
@@ -25,15 +26,7 @@ public class RoleSpecification {
         };
     }
 
-    public static Specification<Role> isSystemRole(Boolean isSystemRole) {
-        return (root, query, cb) -> {
-            if (isSystemRole == null)
-                return null;
-            return cb.equal(root.get("isSystemRole"), isSystemRole);
-        };
-    }
-
-    public static Specification<Role> hasRealm(Long realmId) {
+    public static Specification<Group> hasRealm(Long realmId) {
         return (root, query, cb) -> {
             if (realmId == null)
                 return null;
@@ -41,7 +34,7 @@ public class RoleSpecification {
         };
     }
 
-    public static Specification<Role> searchByNameIgnoreCase(String search) {
+    public static Specification<Group> searchByNameIgnoreCase(String search) {
         return (root, query, cb) -> {
             if (search == null || search.isEmpty()) {
                 return null; // no filtering if search is empty
@@ -53,7 +46,7 @@ public class RoleSpecification {
         };
     }
 
-    public static Specification<Role> hasCreatedAfter(LocalDateTime dateTime) {
+    public static Specification<Group> hasCreatedAfter(LocalDateTime dateTime) {
         return (root, query, cb) -> {
             if (dateTime == null)
                 return null;
@@ -61,7 +54,7 @@ public class RoleSpecification {
         };
     }
 
-    public static Specification<Role> hasCreatedBefore(LocalDateTime dateTime) {
+    public static Specification<Group> hasCreatedBefore(LocalDateTime dateTime) {
         return (root, query, cb) -> {
             if (dateTime == null)
                 return null;
@@ -69,7 +62,7 @@ public class RoleSpecification {
         };
     }
 
-    public static Specification<Role> hasUpdatedAfter(LocalDateTime dateTime) {
+    public static Specification<Group> hasUpdatedAfter(LocalDateTime dateTime) {
         return (root, query, cb) -> {
             if (dateTime == null)
                 return null;
@@ -77,34 +70,11 @@ public class RoleSpecification {
         };
     }
 
-    public static Specification<Role> hasUpdatedBefore(LocalDateTime dateTime) {
+    public static Specification<Group> hasUpdatedBefore(LocalDateTime dateTime) {
         return (root, query, cb) -> {
             if (dateTime == null)
                 return null;
             return cb.lessThan(root.get("updatedAt"), dateTime);
         };
     }
-
-    public static Specification<Role> ofUser(String userName) {
-        return (root, query, cb) -> {
-            if (userName == null || userName.isEmpty())
-                return null;
-            // Join with users collection
-            var users = root.join("users", JoinType.INNER);
-            return cb.equal(cb.lower(users.get("username")), userName.toLowerCase());
-        };
-    }
-
-    public static Specification<Role> ofUserById(Long userId, Long realmId) {
-        return (root, query, cb) -> {
-            if (userId == null || realmId == null)
-                return null;
-            var userJoin = root.join("users", JoinType.INNER);
-            var realmJoin = userJoin.join("realm", JoinType.INNER);
-            Predicate userPredicate = cb.equal(userJoin.get("id"), userId);
-            Predicate realmPredicate = cb.equal(realmJoin.get("id"), realmId);
-            return cb.and(userPredicate, realmPredicate);
-        };
-    }
-
 }

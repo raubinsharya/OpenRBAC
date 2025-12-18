@@ -1,6 +1,5 @@
 package com.open.rbac.openrbac.RequestParams;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,6 +9,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.lang.NonNull;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -40,7 +40,8 @@ public class BaseFilter {
     @Min(0)
     private int page = 0;
 
-    @Min(1) @Max(100)
+    @Min(1)
+    @Max(100)
     @Builder.Default
     private int size = 10;
 
@@ -53,8 +54,8 @@ public class BaseFilter {
     /**
      * Converts filter to Spring Pageable
      */
-    public Pageable toPageable() {
+    public @NonNull Pageable toPageable() {
         Sort.Direction direction = "ASC".equalsIgnoreCase(order) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return PageRequest.of(Math.max(0, page), Math.max(1, size), Sort.by(direction, sortBy));
+        return PageRequest.of(page, size, Sort.by(direction, sortBy));
     }
 }

@@ -54,6 +54,12 @@ spring:
 keycloak:
   base-url: http://localhost:4000
 
+retry:
+  tenant:
+    max-attempts: 3
+    delay: 1000
+    multiplier: 2
+
 ---
 # Docker profile
 spring:

@@ -1,5 +1,7 @@
 package com.open.rbac.openrbac.controllers;
 
+import com.open.rbac.openrbac.RequestParams.GroupFilterRequest;
+import com.open.rbac.openrbac.RequestParams.RealmFilterRequest;
 import com.open.rbac.openrbac.services.RealmService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,11 +19,8 @@ public class RealmController {
 
     @GetMapping
     public ResponseEntity<?> getAllRealms(
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "0", required = false) int page,
-            @RequestParam(defaultValue = "10", required = false) int size,
-            @AuthenticationPrincipal Jwt jwt) {
-        var realms = realmService.getAllRealms(status, page, size);
+            @RequestParam(required = false) String status,  @ModelAttribute RealmFilterRequest realmFilterRequest) {
+        var realms = realmService.getAllRealms(status, realmFilterRequest);
         return ResponseEntity.ok(realms);
     }
 

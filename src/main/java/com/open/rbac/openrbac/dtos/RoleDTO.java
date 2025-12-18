@@ -17,6 +17,7 @@ public record RoleDTO(
         LocalDateTime updatedAt
 ) {
     public static RoleDTO from(Role role) {
+        if (role == null) return null;
         return new RoleDTO(
                 role.getId(),
                 role.getName(),

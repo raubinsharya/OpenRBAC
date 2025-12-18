@@ -1,5 +1,6 @@
 package com.open.rbac.openrbac.specifications;
 
+import com.open.rbac.openrbac.models.Role;
 import jakarta.persistence.criteria.JoinType;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -28,6 +29,18 @@ public class RealmSpecification {
         return (root, query, cb) -> {
             if (realmId == null || realmId.trim().isEmpty()) return null;
             return cb.equal((root.get("realmId")), realmId);
+        };
+    }
+
+    public static Specification<Realm> searchByNameIgnoreCase(String search) {
+        return (root, query, cb) -> {
+            if (search == null || search.isEmpty()) {
+                return null; // no filtering if search is empty
+            }
+            return cb.like(
+                    cb.lower(root.get("name")),
+                    "%" + search.toLowerCase() + "%" // match anywhere in the string
+            );
         };
     }
 

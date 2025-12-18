@@ -12,10 +12,7 @@ public record CreateRoleRequest(
         String name,
         
         String description,
-        
-        @NotNull(message = "Realm ID is required")
-        Long realmId,
-        
+
         Set<Long> permissionIds
 ) {
 }
