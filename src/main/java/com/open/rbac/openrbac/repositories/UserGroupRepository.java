@@ -25,7 +25,7 @@ public interface UserGroupRepository extends JpaRepository<UserGroup, Long>, Jpa
 
         @Query("SELECT ug.user.id FROM UserGroup ug WHERE ug.group.id = :groupId AND ug.user.id IN :userIds")
         List<Long> findExistingMemberIds(@Param("groupId") Long groupId,
-                        @Param("userIds") java.util.List<Long> userIds);
+                        @Param("userIds") List<Long> userIds);
 
         @Modifying
         @Query("DELETE FROM UserGroup ug WHERE ug.group.id = :groupId AND ug.user.id IN :userIds")

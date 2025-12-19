@@ -14,4 +14,5 @@ import java.util.Optional;
 
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Long>, JpaSpecificationExecutor<Role> {
+    boolean existsByIdAndRealm_id(Long id, Long realmId);
 }
