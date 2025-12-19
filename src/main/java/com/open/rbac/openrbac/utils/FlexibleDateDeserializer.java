@@ -1,4 +1,4 @@
-package com.open.rbac.openrbac.config;
+package com.open.rbac.openrbac.utils;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.BeanProperty;
@@ -49,7 +49,7 @@ public class FlexibleDateDeserializer extends JsonDeserializer<LocalDateTime> im
             try {
                 LocalDate date = LocalDate.parse(text, DateTimeFormatter.ISO_DATE);
                 if (strategy == DateStrategy.END_OF_DAY) {
-                    return date.atTime(LocalTime.MAX);
+                    return date.atTime(LocalTime.of(23, 59, 59));
                 } else {
                     return date.atStartOfDay();
                 }

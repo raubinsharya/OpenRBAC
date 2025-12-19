@@ -5,6 +5,8 @@ import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.dtos.UserGroupDTO;
 import com.open.rbac.openrbac.models.UserGroup;
 import com.open.rbac.openrbac.repositories.UserGroupRepository;
+import com.open.rbac.openrbac.requests.RemoveGroupMembersRequest;
+import com.open.rbac.openrbac.requests.UpdateGroupMembersExpiryRequest;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.GroupMemberSpecification;
 import lombok.RequiredArgsConstructor;
@@ -91,5 +93,42 @@ public class UserGroupService {
         return userGroupRepository.saveAll(userGroups).stream()
                 .map(UserGroupDTO::from)
                 .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void removeMembersFromGroup(Long realmId, Long groupId, RemoveGroupMembersRequest request) {
+        if (!groupRepository.existsByIdAndRealm_Id(groupId, realmId)) {
+            throw new EntityNotFoundException("Group not found");
+        }
+
+        List<Long> actualMemberIds = userGroupRepository.findExistingMemberIds(groupId, request.getUserId());
+        if (actualMemberIds.size() != request.getUserId().size()) {
+            List<Long> notFoundMembers = request.getUserId().stream()
+                    .filter(id -> !actualMemberIds.contains(id))
+                    .toList();
+            throw new EntityNotFoundException("Following users are not members of this group: " + notFoundMembers);
+        }
+
+        userGroupRepository.removeMembers(groupId, request.getUserId());
+    }
+
+    @Transactional
+    public void updateMembersExpiry(Long realmId, Long groupId, UpdateGroupMembersExpiryRequest request) {
+        if (!groupRepository.existsByIdAndRealm_Id(groupId, realmId)) {
+            throw new EntityNotFoundException("Group not found");
+        }
+        var userGroups = userGroupRepository.findAllByIdIn(request.getGroupMemberIds());
+        if (userGroups.size() != request.getGroupMemberIds().size()) {
+            var foundMembers = userGroups.stream().map(UserGroup::getId).collect(Collectors.toSet());
+            request.getGroupMemberIds().removeAll(foundMembers);
+            throw new EntityNotFoundException(
+                    "Following users are not members of this group: " + request.getGroupMemberIds());
+        }
+        userGroupRepository.updateExpiryDate(groupId, request.getGroupMemberIds(), request.getExpiryDate());
+    }
+
+    public boolean checkUserGroupMembership(Long realmId, Long groupId, Long userId) {
+        return userGroupRepository.existsByUserIdAndGroup_IdAndGroup_Realm_IdAndUser_Realm_Id(userId, groupId, realmId,
+                realmId);
     }
 }

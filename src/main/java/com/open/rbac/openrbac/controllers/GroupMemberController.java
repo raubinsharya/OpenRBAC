@@ -5,6 +5,9 @@ import com.open.rbac.openrbac.requests.AddGroupMembersRequest;
 import com.open.rbac.openrbac.services.UserGroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -29,4 +32,27 @@ public class GroupMemberController {
         return ResponseEntity.ok(userGroupService.addMembersToGroup(realmId, id, request));
     }
 
+    @DeleteMapping("/members")
+    public ResponseEntity<?> removeMembers(@PathVariable Long realmId,
+            @PathVariable Long id,
+            @Valid @RequestBody com.open.rbac.openrbac.requests.RemoveGroupMembersRequest request) {
+        userGroupService.removeMembersFromGroup(realmId, id, request);
+        return ResponseEntity.ok(java.util.Map.of("message", "Members removed successfully"));
+    }
+
+    @PatchMapping("/members")
+    public ResponseEntity<?> updateMemberExpiry(@PathVariable Long realmId,
+            @PathVariable Long id,
+            @Valid @RequestBody com.open.rbac.openrbac.requests.UpdateGroupMembersExpiryRequest request) {
+        userGroupService.updateMembersExpiry(realmId, id, request);
+        return ResponseEntity.ok(Map.of("message", "Members expiry updated successfully"));
+    }
+
+    @GetMapping("/members/{userId}/check")
+    public ResponseEntity<Map<String, Boolean>> checkGroupMember(@PathVariable Long realmId,
+            @PathVariable Long id,
+            @PathVariable Long userId) {
+        return ResponseEntity.ok(Map.of("isMember",
+                userGroupService.checkUserGroupMembership(realmId, id, userId)));
+    }
 }

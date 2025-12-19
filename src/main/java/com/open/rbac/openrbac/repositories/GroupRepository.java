@@ -17,6 +17,8 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
 
   Optional<Group> findByIdAndRealm_Id(Long id, Long realmId);
 
+  boolean existsByIdAndRealm_Id(Long id, Long realmId);
+
   @Query(value = """
       SELECT
                     g.id,
