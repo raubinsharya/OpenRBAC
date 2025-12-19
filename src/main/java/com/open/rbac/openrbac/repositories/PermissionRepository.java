@@ -9,36 +9,44 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Set;
 
 @Repository
 public interface PermissionRepository extends JpaRepository<Permission, Long>, JpaSpecificationExecutor<Permission> {
-    @Query("""
-                select p.name
-                from Permission p
-                where p.realm.id = :realmId
-                and p.name in :names
-            """)
-    Set<String> findExistingNames(
-            @Param("realmId") Long realmId,
-            @Param("names") Set<String> names);
 
-    @Query("""
-            select distinct p.resource
-            from Permission p
-            where p.realm.id = :realmId
-            """)
-    Page<String> findDistinctResources(
-            @Param("realmId") Long realmId,
-            Pageable pageable);
+        List<Permission> findAllByIdInAndRealm_Id(Set<Long> ids, Long realmId);
 
-    @Query("""
-            select distinct p.action
-            from Permission p
-            where p.realm.id = :realmId
-            """)
-    Page<String> findDistinctActions(
-            @Param("realmId") Long realmId,
-            Pageable pageable);
+        @Query("SELECT p FROM Role r JOIN r.permissions p WHERE r.id = :roleId AND r.realm.id = :realmId")
+        Page<Permission> findByRoleIdAndRealmId(@Param("roleId") Long roleId, @Param("realmId") Long realmId,
+                        Pageable pageable);
+
+        @Query("""
+                            select p.name
+                            from Permission p
+                            where p.realm.id = :realmId
+                            and p.name in :names
+                        """)
+        Set<String> findExistingNames(
+                        @Param("realmId") Long realmId,
+                        @Param("names") Set<String> names);
+
+        @Query("""
+                        select distinct p.resource
+                        from Permission p
+                        where p.realm.id = :realmId
+                        """)
+        Page<String> findDistinctResources(
+                        @Param("realmId") Long realmId,
+                        Pageable pageable);
+
+        @Query("""
+                        select distinct p.action
+                        from Permission p
+                        where p.realm.id = :realmId
+                        """)
+        Page<String> findDistinctActions(
+                        @Param("realmId") Long realmId,
+                        Pageable pageable);
 
 }

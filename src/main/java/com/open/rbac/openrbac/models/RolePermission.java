@@ -39,9 +39,9 @@ public class RolePermission {
     @JoinColumn(name = "permission_id", nullable = false)
     private Permission permission;
     
-    @Column(name = "assigned_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
-    private LocalDateTime assignedAt = LocalDateTime.now();
+    private LocalDateTime createdAt = LocalDateTime.now();
     
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_by")
