@@ -21,6 +21,4 @@ public class UserFilterRequest extends BaseFilter {
     private String email;
     private String username;
     private String displayName;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
 }

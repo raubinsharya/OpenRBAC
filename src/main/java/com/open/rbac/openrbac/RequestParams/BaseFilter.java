@@ -1,5 +1,7 @@
 package com.open.rbac.openrbac.RequestParams;
 
+import com.open.rbac.openrbac.annotations.DateStrategy;
+import com.open.rbac.openrbac.annotations.FlexibleDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,16 +25,16 @@ import java.time.LocalDateTime;
 public class BaseFilter {
 
     // ---------------- Common date filters ----------------
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    @FlexibleDate(strategy = DateStrategy.START_OF_DAY)
     private LocalDateTime createdAfter;
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    @FlexibleDate(strategy = DateStrategy.END_OF_DAY)
     private LocalDateTime createdBefore;
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    @FlexibleDate(strategy = DateStrategy.START_OF_DAY)
     private LocalDateTime updatedAfter;
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    @FlexibleDate(strategy = DateStrategy.END_OF_DAY)
     private LocalDateTime updatedBefore;
 
     // ---------------- Pagination & Sorting ----------------

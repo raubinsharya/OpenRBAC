@@ -8,7 +8,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -21,9 +20,7 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 
-import java.time.LocalDateTime;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -36,7 +33,7 @@ public class GlobalExceptionHandler {
      * Helper method to build a consistent ErrorResponse.
      */
     private ResponseEntity<ErrorResponse> buildResponse(String message, HttpStatus status, WebRequest request,
-                                                        Map<String, String> errors) {
+            Map<String, String> errors) {
         ErrorResponse errorResponse = ErrorResponse.builder()
                 .message(message)
                 .status(status.value())
@@ -50,7 +47,7 @@ public class GlobalExceptionHandler {
     // ==================== Validation Exceptions ====================
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex,
-                                                                    WebRequest request) {
+            WebRequest request) {
 
         Map<String, String> errors = ex.getBindingResult()
                 .getFieldErrors()
@@ -71,10 +68,9 @@ public class GlobalExceptionHandler {
         return buildResponse("Validation failed", HttpStatus.BAD_REQUEST, request, errors);
     }
 
-
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ErrorResponse> handleConstraintViolationException(ConstraintViolationException ex,
-                                                                            WebRequest request) {
+            WebRequest request) {
         Map<String, String> errors = ex.getConstraintViolations()
                 .stream()
                 .collect(Collectors.toMap(v -> v.getPropertyPath().toString(), v -> v.getMessage()));
@@ -92,14 +88,14 @@ public class GlobalExceptionHandler {
     }
 
     // ==================== Illegal Argument / State ====================
-    @ExceptionHandler({IllegalArgumentException.class})
+    @ExceptionHandler({ IllegalArgumentException.class })
     public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
         log.warn("Illegal argument: {}", ex.getMessage());
         return buildResponse(Optional.ofNullable(ex.getMessage()).orElse("Invalid argument"), HttpStatus.BAD_REQUEST,
                 request, null);
     }
 
-    @ExceptionHandler({IllegalStateException.class})
+    @ExceptionHandler({ IllegalStateException.class })
     public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex, WebRequest request) {
         log.warn("Illegal state: {}", ex.getMessage());
         return buildResponse(Optional.ofNullable(ex.getMessage()).orElse("Invalid state"), HttpStatus.CONFLICT, request,
@@ -109,7 +105,7 @@ public class GlobalExceptionHandler {
     // ==================== Data Integrity ====================
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex,
-                                                                      WebRequest request) {
+            WebRequest request) {
         String message = "Data integrity violation";
 
         if (ex.getMessage() != null) {
@@ -129,7 +125,7 @@ public class GlobalExceptionHandler {
     // ==================== Request / Type Exceptions ====================
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
-                                                            WebRequest request) {
+            WebRequest request) {
         String message = String.format("Invalid value '%s' for parameter '%s'. Expected type: %s",
                 ex.getValue(), ex.getName(), ex.getRequiredType().getSimpleName());
 
@@ -148,7 +144,7 @@ public class GlobalExceptionHandler {
     }
 
     // ==================== Security Exceptions ====================
-    @ExceptionHandler({AuthenticationException.class, AccessDeniedException.class, SecurityException.class})
+    @ExceptionHandler({ AuthenticationException.class, AccessDeniedException.class, SecurityException.class })
     public ResponseEntity<ErrorResponse> handleSecurityExceptions(Exception ex, WebRequest request) {
         log.warn("Security exception: {}", ex.getMessage());
         return buildResponse("Access denied", HttpStatus.FORBIDDEN, request, null);

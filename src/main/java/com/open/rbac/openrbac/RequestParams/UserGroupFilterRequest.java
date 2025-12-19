@@ -6,8 +6,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
-import org.springframework.format.annotation.DateTimeFormat;
 
+import com.open.rbac.openrbac.annotations.DateStrategy;
+import com.open.rbac.openrbac.annotations.FlexibleDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -24,14 +25,16 @@ public class UserGroupFilterRequest extends BaseFilter {
     private EntityStatus status;
     private EntityStatus groupStatus;
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    @FlexibleDate(strategy = DateStrategy.START_OF_DAY)
     private LocalDateTime assignedAtAfter;
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+
+    @FlexibleDate(strategy = DateStrategy.END_OF_DAY)
     private LocalDateTime assignedAtBefore;
 
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+    @FlexibleDate(strategy = DateStrategy.START_OF_DAY)
     private LocalDateTime groupMemberExpiryAfter;
-    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+
+    @FlexibleDate(strategy = DateStrategy.END_OF_DAY)
     private LocalDateTime groupMemberExpiryBefore;
 
 }
