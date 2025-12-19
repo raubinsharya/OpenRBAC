@@ -1,26 +1,19 @@
 package com.open.rbac.openrbac.services;
 
-import com.open.rbac.openrbac.RequestParams.RealmFilterRequest;
+import com.open.rbac.openrbac.requestParams.RealmFilterRequest;
 import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.dtos.RealmDTO;
-import com.open.rbac.openrbac.dtos.UserDTO;
 import com.open.rbac.openrbac.models.Realm;
-import com.open.rbac.openrbac.models.User;
 import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.RealmSpecification;
 
-import com.open.rbac.openrbac.specifications.UserSpecification;
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.springframework.data.jpa.domain.Specification;
 

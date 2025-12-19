@@ -1,6 +1,6 @@
 package com.open.rbac.openrbac.specifications;
 
-import com.open.rbac.openrbac.RequestParams.BaseFilter;
+import com.open.rbac.openrbac.requestParams.BaseFilter;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 

@@ -1,4 +1,4 @@
-package com.open.rbac.openrbac.RequestParams;
+package com.open.rbac.openrbac.requestParams;
 
 import com.open.rbac.openrbac.enums.EntityStatus;
 import lombok.AllArgsConstructor;

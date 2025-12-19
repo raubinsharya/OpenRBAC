@@ -1,6 +1,6 @@
 package com.open.rbac.openrbac.services;
 
-import com.open.rbac.openrbac.RequestParams.UserGroupFilterRequest;
+import com.open.rbac.openrbac.requestParams.UserGroupFilterRequest;
 import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.dtos.UserGroupDTO;
 import com.open.rbac.openrbac.models.UserGroup;

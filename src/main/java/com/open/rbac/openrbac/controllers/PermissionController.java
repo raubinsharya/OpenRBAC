@@ -1,7 +1,7 @@
 package com.open.rbac.openrbac.controllers;
 
-import com.open.rbac.openrbac.RequestParams.PermissionFilterRequest;
-import com.open.rbac.openrbac.RequestParams.ResourceFilterRequest;
+import com.open.rbac.openrbac.requestParams.PermissionFilterRequest;
+import com.open.rbac.openrbac.requestParams.ResourceFilterRequest;
 import com.open.rbac.openrbac.models.Permission;
 import com.open.rbac.openrbac.requests.StandardPermission;
 import com.open.rbac.openrbac.services.PermissionService;

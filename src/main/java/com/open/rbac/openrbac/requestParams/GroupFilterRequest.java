@@ -1,4 +1,4 @@
-package com.open.rbac.openrbac.RequestParams;
+package com.open.rbac.openrbac.requestParams;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

@@ -1,7 +1,6 @@
 package com.open.rbac.openrbac.controllers;
 
-import com.open.rbac.openrbac.RequestParams.GroupFilterRequest;
-import com.open.rbac.openrbac.RequestParams.RealmFilterRequest;
+import com.open.rbac.openrbac.requestParams.RealmFilterRequest;
 import com.open.rbac.openrbac.services.RealmService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

@@ -1,6 +1,6 @@
 package com.open.rbac.openrbac.controllers;
 
-import com.open.rbac.openrbac.RequestParams.UserGroupFilterRequest;
+import com.open.rbac.openrbac.requestParams.UserGroupFilterRequest;
 import com.open.rbac.openrbac.requests.AddGroupMembersRequest;
 import com.open.rbac.openrbac.services.UserGroupService;
 import jakarta.validation.Valid;

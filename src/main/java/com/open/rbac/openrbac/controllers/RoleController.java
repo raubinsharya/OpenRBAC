@@ -1,13 +1,11 @@
 package com.open.rbac.openrbac.controllers;
 
-import com.open.rbac.openrbac.RequestParams.RoleFilterRequest;
+import com.open.rbac.openrbac.requestParams.RoleFilterRequest;
 import com.open.rbac.openrbac.models.Role;
 import com.open.rbac.openrbac.services.RoleService;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

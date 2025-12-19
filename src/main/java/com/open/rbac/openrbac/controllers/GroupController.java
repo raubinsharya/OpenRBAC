@@ -1,6 +1,6 @@
 package com.open.rbac.openrbac.controllers;
 
-import com.open.rbac.openrbac.RequestParams.GroupFilterRequest;
+import com.open.rbac.openrbac.requestParams.GroupFilterRequest;
 import com.open.rbac.openrbac.requests.CreateGroupRequest;
 import com.open.rbac.openrbac.services.GroupService;
 import jakarta.validation.Valid;

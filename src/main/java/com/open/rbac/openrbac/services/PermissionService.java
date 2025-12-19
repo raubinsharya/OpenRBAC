@@ -1,7 +1,7 @@
 package com.open.rbac.openrbac.services;
 
-import com.open.rbac.openrbac.RequestParams.PermissionFilterRequest;
-import com.open.rbac.openrbac.RequestParams.ResourceFilterRequest;
+import com.open.rbac.openrbac.requestParams.PermissionFilterRequest;
+import com.open.rbac.openrbac.requestParams.ResourceFilterRequest;
 import com.open.rbac.openrbac.annotations.RequireAnyRole;
 import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.dtos.PermissionDTO;
@@ -15,7 +15,6 @@ import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.PermissionSpecification;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Page;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
@@ -23,7 +22,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.ConnectException;
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;

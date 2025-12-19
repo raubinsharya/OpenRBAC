@@ -1,7 +1,7 @@
 package com.open.rbac.openrbac.services;
 
-import com.open.rbac.openrbac.RequestParams.PermissionFilterRequest;
-import com.open.rbac.openrbac.RequestParams.RoleFilterRequest;
+import com.open.rbac.openrbac.requestParams.PermissionFilterRequest;
+import com.open.rbac.openrbac.requestParams.RoleFilterRequest;
 import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.dtos.PermissionDTO;
 import com.open.rbac.openrbac.dtos.RoleDTO;

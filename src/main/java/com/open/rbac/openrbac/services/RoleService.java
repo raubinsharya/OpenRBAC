@@ -1,10 +1,9 @@
 package com.open.rbac.openrbac.services;
 
-import com.open.rbac.openrbac.RequestParams.RoleFilterRequest;
+import com.open.rbac.openrbac.requestParams.RoleFilterRequest;
 import com.open.rbac.openrbac.annotations.RequireAnyRole;
 import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.dtos.RoleDTO;
-import com.open.rbac.openrbac.models.Realm;
 import com.open.rbac.openrbac.models.Role;
 import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.repositories.RoleRepository;
@@ -13,8 +12,6 @@ import com.open.rbac.openrbac.specifications.RoleSpecification;
 
 import lombok.RequiredArgsConstructor;
 
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;

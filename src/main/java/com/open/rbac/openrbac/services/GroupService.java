@@ -1,6 +1,6 @@
 package com.open.rbac.openrbac.services;
 
-import com.open.rbac.openrbac.RequestParams.GroupFilterRequest;
+import com.open.rbac.openrbac.requestParams.GroupFilterRequest;
 import com.open.rbac.openrbac.annotations.RequireAnyRole;
 import com.open.rbac.openrbac.dtos.GroupDTO;
 import com.open.rbac.openrbac.dtos.PagedResponse;
