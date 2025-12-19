@@ -19,7 +19,9 @@ public record UserGroupDTO(
         EntityStatus groupStatus,
         LocalDateTime groupMemberExpiry,
         LocalDateTime assignedAt,
-        String assignedBy
+        String assignedBy,
+        boolean isGroupMembershipExpired,
+        boolean isGroupMembershipValid
 ) {
 
     public static UserGroupDTO from(UserGroup userGroup) {
@@ -28,6 +30,8 @@ public record UserGroupDTO(
                 .groupName(userGroup.getGroup().getName())
                 .groupStatus(userGroup.getGroup().getStatus())
                 .groupMemberExpiry(userGroup.getExpiryDate())
+                .isGroupMembershipExpired(userGroup.isExpired())
+                .isGroupMembershipValid(userGroup.isValid())
                 .assignedAt(userGroup.getCreatedAt())
                 .assignedBy(userGroup.getAssignedBy() != null ? userGroup.getAssignedBy().getDisplayName() : "Unknown")
                 .build();

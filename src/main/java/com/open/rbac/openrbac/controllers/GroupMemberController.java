@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.controllers;
 
 import com.open.rbac.openrbac.RequestParams.UserGroupFilterRequest;
+import com.open.rbac.openrbac.requests.AddGroupMembersRequest;
 import com.open.rbac.openrbac.services.UserGroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +17,16 @@ public class GroupMemberController {
 
     @GetMapping("/members")
     public ResponseEntity<?> getGroupMembers(@PathVariable Long realmId,
-                                            @PathVariable Long id,
-                                            @ModelAttribute @Valid UserGroupFilterRequest userGroupFilterRequest) {
+            @PathVariable Long id,
+            @ModelAttribute @Valid UserGroupFilterRequest userGroupFilterRequest) {
         return ResponseEntity.ok(userGroupService.getGroupMembers(realmId, id, userGroupFilterRequest));
     }
 
+    @PostMapping("/members")
+    public ResponseEntity<?> addMembers(@PathVariable Long realmId,
+            @PathVariable Long id,
+            @Valid @RequestBody AddGroupMembersRequest request) {
+        return ResponseEntity.ok(userGroupService.addMembersToGroup(realmId, id, request));
+    }
 
 }

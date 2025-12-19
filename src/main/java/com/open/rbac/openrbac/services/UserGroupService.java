@@ -9,6 +9,19 @@ import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.GroupMemberSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
+import com.open.rbac.openrbac.repositories.GroupRepository;
+import com.open.rbac.openrbac.repositories.UserRepository;
+import com.open.rbac.openrbac.requests.AddGroupMembersRequest;
+import jakarta.persistence.EntityNotFoundException;
+import com.open.rbac.openrbac.models.Group;
+import com.open.rbac.openrbac.models.User;
+import jakarta.transaction.Transactional;
+
+import java.util.List;
+
+import java.util.stream.Collectors;
+
+import com.open.rbac.openrbac.utils.SecurityUtils;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,6 +29,8 @@ import org.springframework.stereotype.Service;
 public class UserGroupService {
 
     private final UserGroupRepository userGroupRepository;
+    private final GroupRepository groupRepository;
+    private final UserRepository userRepository;
 
     public PagedResponse<UserGroupDTO> getGroupMembers(Long realmId, Long id, UserGroupFilterRequest filter) {
         Specification<UserGroup> spec = GroupMemberSpecification.ofGroup(id, realmId)
@@ -32,5 +47,47 @@ public class UserGroupService {
                 .and(GroupMemberSpecification.groupMemberExpiryAfter(filter.getGroupMemberExpiryAfter()));
 
         return PagedResponse.fromPage(userGroupRepository.findAll(spec, filter.toPageable()), UserGroupDTO::from);
+    }
+
+    @Transactional
+    public List<UserGroupDTO> addMembersToGroup(Long realmId, Long groupId, AddGroupMembersRequest request) {
+        Group group = groupRepository.findByIdAndRealm_Id(groupId, realmId)
+                .orElseThrow(() -> new EntityNotFoundException("Group not found"));
+
+        List<User> users = userRepository.findAllByIdInAndRealm_Id(request.getUserId(), realmId).orElse(List.of());
+        var requestedUserIds = users.stream().map(User::getId).toList();
+        if (users.size() != request.getUserId().size()) {
+            var notFoundUsers = request.getUserId().stream().filter(userId -> !requestedUserIds.contains(userId))
+                    .toList();
+            throw new EntityNotFoundException("User with ids " + notFoundUsers + " not found");
+        }
+
+        List<Long> existingMemberIds = userGroupRepository.findExistingMemberIds(groupId, requestedUserIds);
+        if (!existingMemberIds.isEmpty()) {
+            throw new EntityNotFoundException("User with ids " + existingMemberIds + " already have membership");
+        }
+
+        // Get current user (assignedBy)
+        final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
+            String username = jwt.getClaimAsString("preferred_username");
+            if (username != null) {
+                return userRepository.findByUsername(username).orElse(null);
+            }
+            return null;
+        });
+
+        List<UserGroup> userGroups = users.stream()
+                .map(user -> UserGroup.builder()
+                        .user(user)
+                        .group(group)
+                        .assignedBy(assignedBy)
+                        .expiryDate(request.getExpiryDate())
+                        .isActive(true)
+                        .build())
+                .toList();
+
+        return userGroupRepository.saveAll(userGroups).stream()
+                .map(UserGroupDTO::from)
+                .collect(Collectors.toList());
     }
 }
