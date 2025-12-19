@@ -2,6 +2,8 @@ package com.open.rbac.openrbac.specifications;
 
 import com.open.rbac.openrbac.enums.EntityStatus;
 import com.open.rbac.openrbac.models.UserGroup;
+
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
@@ -150,6 +152,50 @@ public class GroupMemberSpecification {
                 return null;
             }
             return cb.greaterThanOrEqualTo(root.get("expiryDate"), groupMemberExpiry);
+        };
+    }
+
+    public static Specification<UserGroup> isGroupMembershipExpired(Boolean isExpired) {
+        return (root, query, cb) -> {
+            if (isExpired == null) {
+                return null;
+            }
+            Expression<LocalDateTime> now = cb.currentTimestamp().as(LocalDateTime.class);
+            if (isExpired) {
+                // Expired: expiryDate is not null AND expiryDate < now
+                return cb.and(
+                        cb.isNotNull(root.get("expiryDate")),
+                        cb.lessThan(root.get("expiryDate"), now));
+            } else {
+                // Not Expired: expiryDate is null OR expiryDate >= now
+                return cb.or(
+                        cb.isNull(root.get("expiryDate")),
+                        cb.greaterThanOrEqualTo(root.get("expiryDate"), now));
+            }
+        };
+    }
+
+    public static Specification<UserGroup> isGroupMembershipValid(Boolean isValid) {
+        return (root, query, cb) -> {
+            if (isValid == null) {
+                return null;
+            }
+            Expression<LocalDateTime> now = cb.currentTimestamp().as(LocalDateTime.class);
+            if (isValid) {
+                // Valid: isActive is true AND (expiryDate is null OR expiryDate > now)
+                return cb.and(
+                        cb.equal(root.get("isActive"), true),
+                        cb.or(
+                                cb.isNull(root.get("expiryDate")),
+                                cb.greaterThan(root.get("expiryDate"), now)));
+            } else {
+                // Invalid: isActive is false OR (expiryDate is not null AND expiryDate <= now)
+                return cb.or(
+                        cb.equal(root.get("isActive"), false),
+                        cb.and(
+                                cb.isNotNull(root.get("expiryDate")),
+                                cb.lessThanOrEqualTo(root.get("expiryDate"), now)));
+            }
         };
     }
 }

@@ -44,7 +44,9 @@ public class UserGroupService {
                 .and(GroupMemberSpecification.assignedAtBefore(filter.getAssignedAtBefore()))
                 .and(GroupMemberSpecification.assignedAtAfter(filter.getAssignedAtAfter()))
                 .and(GroupMemberSpecification.groupMemberExpiryBefore(filter.getGroupMemberExpiryBefore()))
-                .and(GroupMemberSpecification.groupMemberExpiryAfter(filter.getGroupMemberExpiryAfter()));
+                .and(GroupMemberSpecification.groupMemberExpiryAfter(filter.getGroupMemberExpiryAfter()))
+                .and(GroupMemberSpecification.isGroupMembershipExpired(filter.getIsGroupMembershipExpired()))
+                .and(GroupMemberSpecification.isGroupMembershipValid(filter.getIsGroupMembershipValid()));
 
         return PagedResponse.fromPage(userGroupRepository.findAll(spec, filter.toPageable()), UserGroupDTO::from);
     }

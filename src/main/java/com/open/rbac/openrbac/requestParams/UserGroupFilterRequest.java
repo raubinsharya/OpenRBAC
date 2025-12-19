@@ -24,6 +24,8 @@ public class UserGroupFilterRequest extends BaseFilter {
     private String assignedBy;
     private EntityStatus status;
     private EntityStatus groupStatus;
+    private Boolean isGroupMembershipExpired;
+    private Boolean isGroupMembershipValid;
 
     @FlexibleDate(strategy = DateStrategy.START_OF_DAY)
     private LocalDateTime assignedAtAfter;
