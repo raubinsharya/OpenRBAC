@@ -11,10 +11,22 @@ public record GroupDTO(
         String name,
         String description,
         String path,
+        Long parentGroupId,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
-        EntityStatus status) {
+        EntityStatus status,
+        java.util.List<GroupDTO> children,
+        GroupDTO parent) {
+
     public static GroupDTO from(Group group) {
+        return from(group, null, null);
+    }
+
+    public static GroupDTO from(Group group, java.util.List<GroupDTO> children) {
+        return from(group, children, null);
+    }
+
+    public static GroupDTO from(Group group, java.util.List<GroupDTO> children, GroupDTO parent) {
         if (group == null)
             return null;
         return new GroupDTO(
@@ -22,8 +34,11 @@ public record GroupDTO(
                 group.getName(),
                 group.getDescription(),
                 group.getPath(),
+                group.getParentGroup() != null ? group.getParentGroup().getId() : null,
                 group.getCreatedAt(),
                 group.getUpdatedAt(),
-                group.getStatus());
+                group.getStatus(),
+                children,
+                parent);
     }
 }

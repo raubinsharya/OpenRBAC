@@ -68,4 +68,81 @@ public class GroupService {
         Specification<Group> specification = GroupSpecification.hasRealm(realmId).and(GroupSpecification.hasId(id));
         return groupRepository.findOne(specification).stream().map(GroupDTO::from).findFirst().orElse(null);
     }
+
+    public GroupDTO getHierarchy(Long realmId, Long groupId) {
+        // Fetch specific group, its ancestors, and all its descendants in one query
+        java.util.List<Group> hierarchy = groupRepository.findGroupHierarchy(realmId, groupId);
+
+        if (hierarchy.isEmpty()) {
+            throw new IllegalArgumentException("Group not found");
+        }
+
+        // Map of ID -> Fully loaded Group Entity (to avoid using lazy proxies)
+        java.util.Map<Long, Group> groupMap = hierarchy.stream()
+                .collect(java.util.stream.Collectors.toMap(Group::getId, g -> g, (a, b) -> a));
+
+        // The requested node
+        Group requestedNode = groupMap.get(groupId);
+        if (requestedNode == null) {
+            throw new IllegalArgumentException("Group not found in hierarchy");
+        }
+
+        // MAP: ParentID -> List<Children> (for building descendants tree)
+        java.util.Map<Long, java.util.List<Group>> childrenMap = hierarchy.stream()
+                .filter(g -> g.getParentGroup() != null)
+                .collect(java.util.stream.Collectors.groupingBy(g -> g.getParentGroup().getId()));
+
+        // 1. Build Descendants Tree (Children)
+        GroupDTO resultDTO = buildDescendantsTree(requestedNode, childrenMap);
+
+        // 2. Build Ancestor Chain (Parents) and attach to result
+        resultDTO = attachAncestors(resultDTO, requestedNode, groupMap);
+
+        return resultDTO;
+    }
+
+    private GroupDTO buildDescendantsTree(Group current, java.util.Map<Long, java.util.List<Group>> childrenMap) {
+        var myChildren = childrenMap.getOrDefault(current.getId(), java.util.Collections.emptyList());
+
+        var childrenDTOs = myChildren.stream()
+                .map(child -> buildDescendantsTree(child, childrenMap))
+                .toList();
+
+        return GroupDTO.from(current, childrenDTOs.isEmpty() ? null : childrenDTOs, null);
+    }
+
+    private GroupDTO attachAncestors(GroupDTO currentDTO, Group currentNode, java.util.Map<Long, Group> groupMap) {
+        if (currentNode.getParentGroup() == null) {
+            return currentDTO;
+        }
+
+        // Find the full entity of the parent from our pre-fetched map
+        Group parentGroup = groupMap.get(currentNode.getParentGroup().getId());
+        if (parentGroup == null) {
+            // Parent exists in DB but wasn't fetched in hierarchy query?
+            // This happens if query logic is flawed or root reached.
+            return currentDTO;
+        }
+
+        // Recursively build parent DTO (without its children, to avoid massive
+        // duplication/cycles)
+        // We only want the chain upwards.
+        GroupDTO parentDTO = GroupDTO.from(parentGroup, null, null);
+
+        // Recursively attach ITS parent
+        parentDTO = attachAncestors(parentDTO, parentGroup, groupMap);
+
+        // Return the current DTO with this new parent attached
+        return new GroupDTO(
+                currentDTO.id(),
+                currentDTO.name(),
+                currentDTO.description(),
+                currentDTO.path(),
+                currentDTO.parentGroupId(),
+                currentDTO.createdAt(),
+                currentDTO.updatedAt(),
+                currentDTO.status(),
+                currentDTO.children(),
+                parentDTO);
+    }
 }

@@ -1,8 +1,6 @@
 package com.open.rbac.openrbac.controllers;
 
 import com.open.rbac.openrbac.RequestParams.GroupFilterRequest;
-import com.open.rbac.openrbac.models.Group;
-import com.open.rbac.openrbac.models.Role;
 import com.open.rbac.openrbac.requests.CreateGroupRequest;
 import com.open.rbac.openrbac.services.GroupService;
 import jakarta.validation.Valid;
@@ -35,9 +33,16 @@ public class GroupController {
     }
 
     @PostMapping
-    public ResponseEntity<?> createRole(
+    public ResponseEntity<?> createGroup(
             @PathVariable Long realmId,
             @Valid @RequestBody CreateGroupRequest createGroupRequest) {
         return ResponseEntity.ok(groupService.createGroup(realmId, createGroupRequest));
+    }
+
+    @GetMapping("/{id}/hierarchy")
+    public ResponseEntity<?> getHierarchy(
+            @PathVariable Long realmId,
+            @PathVariable Long id) {
+        return ResponseEntity.ok(groupService.getHierarchy(realmId, id));
     }
 }
