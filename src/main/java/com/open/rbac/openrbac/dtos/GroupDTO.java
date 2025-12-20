@@ -3,7 +3,9 @@ package com.open.rbac.openrbac.dtos;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import com.open.rbac.openrbac.models.Group;
+
 import java.time.LocalDateTime;
+import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public record GroupDTO(
@@ -15,18 +17,19 @@ public record GroupDTO(
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
         EntityStatus status,
-        java.util.List<GroupDTO> children,
-        GroupDTO parent) {
+        List<GroupDTO> children,
+        GroupDTO parent,
+        List<Long> ancestors) {
 
     public static GroupDTO from(Group group) {
         return from(group, null, null);
     }
 
-    public static GroupDTO from(Group group, java.util.List<GroupDTO> children) {
+    public static GroupDTO from(Group group, List<GroupDTO> children) {
         return from(group, children, null);
     }
 
-    public static GroupDTO from(Group group, java.util.List<GroupDTO> children, GroupDTO parent) {
+    public static GroupDTO from(Group group, List<GroupDTO> children, GroupDTO parent) {
         if (group == null)
             return null;
         return new GroupDTO(
@@ -39,6 +42,7 @@ public record GroupDTO(
                 group.getUpdatedAt(),
                 group.getStatus(),
                 children,
-                parent);
+                parent,
+                group.getAncestorIds());
     }
 }
