@@ -34,7 +34,7 @@ public class GroupService {
         return PagedResponse.fromPage(groups, GroupDTO::from);
     }
 
-    @RequireAnyRole(value = { "realm-admin" })
+    @RequireAnyRole(value = {"realm-admin"})
     @Transactional(rollbackFor = Exception.class)
     public Group createGroup(long realmId, CreateGroupRequest createGroupRequest) {
         var realm = realmRepository.findById(realmId)
@@ -143,6 +143,6 @@ public class GroupService {
                 currentDTO.updatedAt(),
                 currentDTO.status(),
                 currentDTO.children(),
-                parentDTO);
+                parentDTO, currentDTO.ancestors());
     }
 }
