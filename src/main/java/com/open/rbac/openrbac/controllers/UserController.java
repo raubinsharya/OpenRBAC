@@ -7,6 +7,8 @@ import com.open.rbac.openrbac.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -39,7 +41,6 @@ public class UserController {
             @PathVariable Long realmId,
             @PathVariable("id") Long userId,
             @ModelAttribute @Valid ResourceFilterRequest filter) {
-        var resources = permissionService.getUserResources(realmId, userId, filter);
-        return ResponseEntity.ok(resources);
+        return ResponseEntity.ok(Map.of("resources", "Under Development"));
     }
 }

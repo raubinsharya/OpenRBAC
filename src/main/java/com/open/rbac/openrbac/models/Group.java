@@ -92,6 +92,14 @@ public class Group {
         this.updatedAt = LocalDateTime.now();
     }
 
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<GroupRole> groupRoles;
+
+    @OneToMany(mappedBy = "group", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<UserGroup> userGroups;
+
     /**
      * Get list of ancestor group IDs from the materialized path
      * 

@@ -77,6 +77,13 @@ public class Role {
         @ToString.Exclude
         @Builder.Default
         private List<UserRole> userRoles = new java.util.ArrayList<>();
+
+        @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+        @JsonIgnore
+        @ToString.Exclude
+        @Builder.Default
+        private List<GroupRole> groupRoles = new java.util.ArrayList<>();
+
         /**
          * Permissions associated with this role (many-to-many relationship)
          */

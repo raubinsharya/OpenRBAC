@@ -88,6 +88,11 @@ public class Permission {
     @JsonIgnore
     private Set<User> users;
 
+    @OneToMany(mappedBy = "permission", fetch = FetchType.LAZY)
+    @JsonIgnore
+    @ToString.Exclude
+    private Set<RolePermission> rolePermissions;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "realm_id", nullable = false)
     @JsonIgnore
