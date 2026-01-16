@@ -128,4 +128,12 @@ public class RolePermissionSpecification {
             return cb.greaterThanOrEqualTo(root.get("createdAt"), date);
         };
     }
+
+    public static Specification<RolePermission> isNotExpired() {
+        return (root, query, cb) -> {
+            return cb.or(
+                    cb.isNull(root.get("expiryDate")),
+                    cb.greaterThan(root.get("expiryDate"), LocalDateTime.now()));
+        };
+    }
 }

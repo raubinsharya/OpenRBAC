@@ -22,7 +22,9 @@ public record RolePermissionDTO(
                 EntityStatus roleStatus,
                 EntityStatus permissionStatus,
                 LocalDateTime assignedAt,
-                String assignedBy) {
+                String assignedBy,
+                LocalDateTime expiryDate,
+                Boolean isActive) {
 
         public static RolePermissionDTO from(RolePermission rolePermission) {
                 if (rolePermission == null)
@@ -40,6 +42,8 @@ public record RolePermissionDTO(
                                 .assignedBy(rolePermission.getAssignedBy() != null
                                                 ? rolePermission.getAssignedBy().getDisplayName()
                                                 : "Unknown")
+                                .expiryDate(rolePermission.getExpiryDate())
+                                .isActive(rolePermission.getIsActive())
                                 .build();
         }
 }

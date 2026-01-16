@@ -74,6 +74,7 @@ public class RolePermissionService {
                 .role(role)
                 .permission(p)
                 .assignedBy(assignedBy)
+                .expiryDate(request.getExpiryDate())
                 .build()).toList();
         rolePermissionRepository.saveAll(rolePermissions);
 
@@ -112,7 +113,8 @@ public class RolePermissionService {
                 RolePermissionSpecification.assignedBy(filter.getAssignedBy()),
                 RolePermissionSpecification.hasRoleStatus(filter.getRoleStatus()),
                 RolePermissionSpecification.assignedAtBefore(filter.getAssignedAtBefore()),
-                RolePermissionSpecification.assignedAtAfter(filter.getAssignedAtAfter()));
+                RolePermissionSpecification.assignedAtAfter(filter.getAssignedAtAfter()),
+                RolePermissionSpecification.isNotExpired());
 
         return PagedResponse.fromPage(rolePermissionRepository.findAll(spec, filter.toPageable()),
                 RolePermissionDTO::from);

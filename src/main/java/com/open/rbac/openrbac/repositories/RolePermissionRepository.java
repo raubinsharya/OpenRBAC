@@ -16,18 +16,22 @@ import java.util.Set;
 
 @Repository
 public interface RolePermissionRepository
-        extends JpaRepository<RolePermission, Long>, JpaSpecificationExecutor<RolePermission> {
+                extends JpaRepository<RolePermission, Long>, JpaSpecificationExecutor<RolePermission> {
 
-    @Query("SELECT rp.permission.id FROM RolePermission rp WHERE rp.role.id = :roleId AND rp.permission.id IN :permissionIds")
-    List<Long> findExistingPermissionIds(@Param("roleId") Long roleId, @Param("permissionIds") Set<Long> permissionIds);
+        @Query("SELECT rp.permission.id FROM RolePermission rp WHERE rp.role.id = :roleId AND rp.permission.id IN :permissionIds")
+        List<Long> findExistingPermissionIds(@Param("roleId") Long roleId,
+                        @Param("permissionIds") Set<Long> permissionIds);
 
-    void deleteByRoleIdAndPermissionIdIn(Long roleId, Collection<Long> permissionIds);
+        void deleteByRoleIdAndPermissionIdIn(Long roleId, Collection<Long> permissionIds);
 
-    @Query("SELECT CASE WHEN COUNT(rp) > 0 THEN true ELSE false END FROM RolePermission rp " +
-            "WHERE rp.role.id = :roleId AND rp.role.realm.id = :realmId " +
-            "AND LOWER(rp.permission.resource) = LOWER(:resource) AND LOWER(rp.permission.action) = LOWER(:action)")
-    boolean checkPermission(@Param("realmId") Long realmId,
-            @Param("roleId") Long roleId,
-            @Param("resource") String resource,
-            @Param("action") String action);
+        @Query("SELECT CASE WHEN COUNT(rp) > 0 THEN true ELSE false END FROM RolePermission rp " +
+                        "WHERE rp.role.id = :roleId AND rp.role.realm.id = :realmId " +
+                        "AND rp.role.status = com.open.rbac.openrbac.enums.EntityStatus.ACTIVE AND rp.permission.status = com.open.rbac.openrbac.enums.EntityStatus.ACTIVE "
+                        +
+                        "AND (rp.expiryDate IS NULL OR rp.expiryDate > CURRENT_TIMESTAMP) " +
+                        "AND LOWER(rp.permission.resource) = LOWER(:resource) AND LOWER(rp.permission.action) = LOWER(:action)")
+        boolean checkPermission(@Param("realmId") Long realmId,
+                        @Param("roleId") Long roleId,
+                        @Param("resource") String resource,
+                        @Param("action") String action);
 }
