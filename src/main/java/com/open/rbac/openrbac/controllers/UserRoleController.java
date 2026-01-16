@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/realm/{realmId}/users/{userId}/roles")
+@RequestMapping("/api/v1/realms/{realmId}/users/{userId}/roles")
 @RequiredArgsConstructor
 public class UserRoleController {
 
