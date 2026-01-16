@@ -38,14 +38,15 @@ public class RolePermissionService {
     private final UserRepository userRepository;
 
     @Transactional
-    @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    @RequireAnyRole(value = { "realm-admin", "group-admin" })
     public void addPermissionsToRole(Long realmId, Long roleId, AddRolePermissionsRequest request) {
         Role role = roleRepository.findOne(Specification.allOf(
-                        RoleSpecification.hasId(roleId),
-                        RoleSpecification.hasRealm(realmId)))
+                RoleSpecification.hasId(roleId),
+                RoleSpecification.hasRealm(realmId)))
                 .orElseThrow(() -> new EntityNotFoundException("Role not found"));
 
-        final List<Permission> requestedPermissions = permissionRepository.findAllByIdInAndRealm_Id(request.getPermissionIds(), realmId);
+        final List<Permission> requestedPermissions = permissionRepository
+                .findAllByIdInAndRealm_Id(request.getPermissionIds(), realmId);
         final var foundIds = requestedPermissions.stream().map(Permission::getId).collect(Collectors.toSet());
         if (requestedPermissions.size() != request.getPermissionIds().size()) {
             request.getPermissionIds().removeAll(foundIds);
@@ -75,13 +76,14 @@ public class RolePermissionService {
     }
 
     @Transactional
-    @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    @RequireAnyRole(value = { "realm-admin", "group-admin" })
     public void removePermissionsFromRole(Long realmId, Long roleId, RemoveRolePermissionsRequest request) {
         boolean roleExist = roleRepository.existsByIdAndRealm_id(roleId, realmId);
         if (!roleExist) {
             throw new EntityNotFoundException("Role not found");
         }
-        List<Long> existPermissions = rolePermissionRepository.findExistingPermissionIds(roleId, request.getPermissionIds());
+        List<Long> existPermissions = rolePermissionRepository.findExistingPermissionIds(roleId,
+                request.getPermissionIds());
         if (existPermissions.size() != request.getPermissionIds().size()) {
             request.getPermissionIds().removeAll(new HashSet<>(existPermissions));
             throw new EntityNotFoundException("Permissions are not part this role : " + request.getPermissionIds());
@@ -91,7 +93,7 @@ public class RolePermissionService {
 
     @Transactional(readOnly = true)
     public PagedResponse<RolePermissionDTO> getRolePermissions(Long realmId, Long roleId,
-                                                               RolePermissionFilterRequest filter) {
+            RolePermissionFilterRequest filter) {
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
@@ -110,5 +112,13 @@ public class RolePermissionService {
 
         return PagedResponse.fromPage(rolePermissionRepository.findAll(spec, filter.toPageable()),
                 RolePermissionDTO::from);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean checkRolePermission(Long realmId, Long roleId, String resource, String action) {
+        if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
+            throw new EntityNotFoundException("Role not found");
+        }
+        return rolePermissionRepository.checkPermission(realmId, roleId, resource, action);
     }
 }

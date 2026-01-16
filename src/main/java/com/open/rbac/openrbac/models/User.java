@@ -10,9 +10,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 
-import org.hibernate.annotations.Fetch;
-import org.hibernate.annotations.FetchMode;
-
 /**
  * User entity for RBAC system
  * Authentication is handled by Keycloak - this entity only stores

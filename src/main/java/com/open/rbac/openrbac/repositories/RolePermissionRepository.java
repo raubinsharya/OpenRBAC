@@ -22,4 +22,12 @@ public interface RolePermissionRepository
     List<Long> findExistingPermissionIds(@Param("roleId") Long roleId, @Param("permissionIds") Set<Long> permissionIds);
 
     void deleteByRoleIdAndPermissionIdIn(Long roleId, Collection<Long> permissionIds);
+
+    @Query("SELECT CASE WHEN COUNT(rp) > 0 THEN true ELSE false END FROM RolePermission rp " +
+            "WHERE rp.role.id = :roleId AND rp.role.realm.id = :realmId " +
+            "AND LOWER(rp.permission.resource) = LOWER(:resource) AND LOWER(rp.permission.action) = LOWER(:action)")
+    boolean checkPermission(@Param("realmId") Long realmId,
+            @Param("roleId") Long roleId,
+            @Param("resource") String resource,
+            @Param("action") String action);
 }

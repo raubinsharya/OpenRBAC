@@ -26,6 +26,16 @@ public class RolePermissionController {
         return ResponseEntity.ok(rolePermissionService.getRolePermissions(realmId, id, filter));
     }
 
+    @GetMapping("/check")
+    public ResponseEntity<?> checkPermission(
+            @PathVariable Long realmId,
+            @PathVariable Long id,
+            @RequestParam String resource,
+            @RequestParam String action) {
+        boolean hasPermission = rolePermissionService.checkRolePermission(realmId, id, resource, action);
+        return ResponseEntity.ok(Map.of("hasPermission", hasPermission));
+    }
+
     @PostMapping
     public ResponseEntity<?> addPermissions(
             @PathVariable Long realmId,
