@@ -74,14 +74,15 @@ public class Role {
 
         @ManyToMany(mappedBy = "roles")
         @JsonIgnore
+        @ToString.Exclude
         private Set<User> users;
         /**
          * Permissions associated with this role (many-to-many relationship)
          */
         @JsonIgnore
         @OneToMany(fetch = FetchType.LAZY, mappedBy = "role", orphanRemoval = true, cascade = CascadeType.ALL)
-        @Builder.Default
-        private List<RolePermission> rolePermissions = new ArrayList<>();
+        @ToString.Exclude
+        private List<RolePermission> rolePermissions;
 
         @PreUpdate
         protected void onUpdate() {
