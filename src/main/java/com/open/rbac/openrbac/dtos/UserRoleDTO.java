@@ -37,7 +37,7 @@ public record UserRoleDTO(
                 .roleName(userRole.getRole().getName())
                 .userStatus(userRole.getUser().getStatus())
                 .roleStatus(userRole.getRole().getStatus())
-                .assignedAt(userRole.getAssignedAt())
+                .assignedAt(userRole.getCreatedAt())
                 .assignedBy(userRole.getAssignedBy() != null ? userRole.getAssignedBy().getDisplayName() : "Unknown")
                 .expiryDate(userRole.getExpiryDate())
                 .isActive(userRole.getIsActive())

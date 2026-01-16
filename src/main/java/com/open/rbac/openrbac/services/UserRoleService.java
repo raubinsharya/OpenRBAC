@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -40,14 +41,17 @@ public class UserRoleService {
                 UserSpecification.hasUserId(userId, realmId)))
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-        final List<Role> requestedRoles = roleRepository.findAllById(request.getRoleIds());
-        // Verify all roles belong to the same realm
-        List<Role> validRoles = requestedRoles.stream()
-                .filter(r -> r.getRealm().getId().equals(realmId))
+        final List<Role> validRoles = roleRepository
+                .findAllByIdInAndRealm_Id(Objects.requireNonNull(request.getRoleIds()), realmId);
+
+        // Identify IDs that are either completely missing or belong to another realm
+        List<Long> validRoleIds = validRoles.stream().map(Role::getId).toList();
+        List<Long> notFoundRoleIds = request.getRoleIds().stream()
+                .filter(id -> !validRoleIds.contains(id))
                 .toList();
 
-        if (validRoles.size() != request.getRoleIds().size()) {
-            throw new EntityNotFoundException("Roles not found or invalid for this realm");
+        if (!notFoundRoleIds.isEmpty()) {
+            throw new EntityNotFoundException("Roles not found: " + notFoundRoleIds);
         }
 
         List<Long> existingRoleIds = userRoleRepository.findExistingRoleIds(userId, request.getRoleIds());
@@ -68,6 +72,7 @@ public class UserRoleService {
                 .user(user)
                 .role(r)
                 .assignedBy(assignedBy)
+                .expiryDate(request.getExpiryDate())
                 .isActive(true)
                 .build()).toList();
 

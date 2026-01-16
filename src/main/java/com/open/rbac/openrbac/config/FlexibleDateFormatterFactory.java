@@ -51,7 +51,7 @@ public class FlexibleDateFormatterFactory implements AnnotationFormatterFactory<
                 try {
                     LocalDate date = LocalDate.parse(text, DateTimeFormatter.ISO_DATE);
                     if (strategy == DateStrategy.END_OF_DAY) {
-                        return date.atTime(LocalTime.MAX);
+                        return date.atTime(LocalTime.of(23, 59, 59));
                     } else {
                         return date.atStartOfDay();
                     }

@@ -25,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -45,12 +44,17 @@ public class RolePermissionService {
                 RoleSpecification.hasRealm(realmId)))
                 .orElseThrow(() -> new EntityNotFoundException("Role not found"));
 
-        final List<Permission> requestedPermissions = permissionRepository
-                .findAllByIdInAndRealm_Id(request.getPermissionIds(), realmId);
-        final var foundIds = requestedPermissions.stream().map(Permission::getId).collect(Collectors.toSet());
-        if (requestedPermissions.size() != request.getPermissionIds().size()) {
-            request.getPermissionIds().removeAll(foundIds);
-            throw new EntityNotFoundException("Permissions not found : " + request.getPermissionIds());
+        final List<Permission> validPermissions = permissionRepository
+                .findAllByIdInAndRealm_Id(java.util.Objects.requireNonNull(request.getPermissionIds()), realmId);
+
+        // Identify IDs that are either completely missing or belong to another realm
+        List<Long> validPermissionIds = validPermissions.stream().map(Permission::getId).toList();
+        List<Long> notFoundPermissionIds = request.getPermissionIds().stream()
+                .filter(id -> !validPermissionIds.contains(id))
+                .toList();
+
+        if (!notFoundPermissionIds.isEmpty()) {
+            throw new EntityNotFoundException("Permissions not found: " + notFoundPermissionIds);
         }
         List<Long> rolePermissionAssociation = rolePermissionRepository
                 .findExistingPermissionIds(roleId, request.getPermissionIds());
@@ -66,7 +70,7 @@ public class RolePermissionService {
             }
             return null;
         });
-        List<RolePermission> rolePermissions = requestedPermissions.stream().map(p -> RolePermission.builder()
+        List<RolePermission> rolePermissions = validPermissions.stream().map(p -> RolePermission.builder()
                 .role(role)
                 .permission(p)
                 .assignedBy(assignedBy)

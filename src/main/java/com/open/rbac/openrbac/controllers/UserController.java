@@ -1,6 +1,5 @@
 package com.open.rbac.openrbac.controllers;
 
-import com.open.rbac.openrbac.requestParams.RoleFilterRequest;
 import com.open.rbac.openrbac.requestParams.UserFilterRequest;
 import com.open.rbac.openrbac.services.UserService;
 import jakarta.validation.Valid;
@@ -30,14 +29,5 @@ public class UserController {
             @PathVariable Long realmId) {
         var user = userService.getUserById(id, realmId);
         return ResponseEntity.ok(user);
-    }
-
-    @GetMapping("{id}/roles")
-    public ResponseEntity<?> getUserRoles(
-            @PathVariable Long id,
-            @PathVariable Long realmId,
-            @ModelAttribute RoleFilterRequest filter) {
-        var roles = userService.getUserRoles(id, realmId, filter);
-        return ResponseEntity.ok(roles);
     }
 }
