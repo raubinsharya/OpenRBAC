@@ -89,9 +89,10 @@ public class RoleSpecification {
         return (root, query, cb) -> {
             if (userName == null || userName.isEmpty())
                 return null;
-            // Join with users collection
-            var users = root.join("users", JoinType.INNER);
-            return cb.equal(cb.lower(users.get("username")), userName.toLowerCase());
+            // Join with userRoles collection then to User
+            var userRoles = root.join("userRoles", JoinType.INNER);
+            var user = userRoles.join("user", JoinType.INNER);
+            return cb.equal(cb.lower(user.get("username")), userName.toLowerCase());
         };
     }
 
@@ -99,7 +100,8 @@ public class RoleSpecification {
         return (root, query, cb) -> {
             if (userId == null || realmId == null)
                 return null;
-            var userJoin = root.join("users", JoinType.INNER);
+            var userRoleJoin = root.join("userRoles", JoinType.INNER);
+            var userJoin = userRoleJoin.join("user", JoinType.INNER);
             var realmJoin = userJoin.join("realm", JoinType.INNER);
             Predicate userPredicate = cb.equal(userJoin.get("id"), userId);
             Predicate realmPredicate = cb.equal(realmJoin.get("id"), realmId);

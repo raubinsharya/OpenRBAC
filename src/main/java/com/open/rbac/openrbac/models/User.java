@@ -13,7 +13,6 @@ import java.util.Set;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
 
-
 /**
  * User entity for RBAC system
  * Authentication is handled by Keycloak - this entity only stores
@@ -30,14 +29,11 @@ import org.hibernate.annotations.FetchMode;
         @Index(name = "idx_user_status", columnList = "status"),
         @Index(name = "idx_user_expiry", columnList = "account_expiry_date")
 }, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_realm_email", columnNames = {"realm_id", "email"}),
-        @UniqueConstraint(name = "uk_user_keycloak_id", columnNames = {"keycloak_user_id"})
+        @UniqueConstraint(name = "uk_user_realm_email", columnNames = { "realm_id", "email" }),
+        @UniqueConstraint(name = "uk_user_keycloak_id", columnNames = { "keycloak_user_id" })
 })
 
-@JsonIdentityInfo(
-        generator = ObjectIdGenerators.PropertyGenerator.class,
-        property = "id"
-)
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User {
     @Id
@@ -85,26 +81,21 @@ public class User {
     @JoinColumn(name = "realm_id", nullable = false)
     private Realm realm;
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
-    @JoinTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "role_id"), indexes = {
-            @Index(name = "idx_user_role", columnList = "user_id"),
-            @Index(name = "idx_role_id", columnList = "role_id")
-    }, uniqueConstraints = {
-            @UniqueConstraint(name = "uk_user_role", columnNames = {"user_id", "role_id"})
-    })
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private Set<Role> roles;
+    @ToString.Exclude
+    @Builder.Default
+    private List<UserRole> userRoles = new java.util.ArrayList<>();
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @JoinTable(name = "user_permissions", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"), indexes = {
             @Index(name = "idx_user_permission", columnList = "user_id"),
             @Index(name = "idx_permission_id", columnList = "permission_id")
     }, uniqueConstraints = {
-            @UniqueConstraint(name = "uk_user_permission", columnNames = {"user_id", "permission_id"})
+            @UniqueConstraint(name = "uk_user_permission", columnNames = { "user_id", "permission_id" })
     })
     @JsonIgnore
     private Set<Permission> permissions;
-
 
     // === LIFECYCLE CALLBACKS ===
     @PrePersist
@@ -118,7 +109,6 @@ public class User {
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
     }
-
 
     public String getDisplayName() {
         if (firstName != null && lastName != null) {

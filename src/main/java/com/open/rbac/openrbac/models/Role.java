@@ -72,10 +72,11 @@ public class Role {
         @JsonIgnore
         private Realm realm;
 
-        @ManyToMany(mappedBy = "roles")
+        @OneToMany(mappedBy = "role", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
         @JsonIgnore
         @ToString.Exclude
-        private Set<User> users;
+        @Builder.Default
+        private List<UserRole> userRoles = new java.util.ArrayList<>();
         /**
          * Permissions associated with this role (many-to-many relationship)
          */
