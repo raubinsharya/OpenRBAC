@@ -1,15 +1,13 @@
 package com.open.rbac.openrbac.models;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 import com.open.rbac.openrbac.enums.EntityStatus;
@@ -84,9 +82,10 @@ public class Permission {
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();
 
-    @ManyToMany(mappedBy = "permissions")
+    @OneToMany(mappedBy = "permission", fetch = FetchType.LAZY)
     @JsonIgnore
-    private Set<User> users;
+    @ToString.Exclude
+    private List<UserPermission> userPermissions;
 
     @OneToMany(mappedBy = "permission", fetch = FetchType.LAZY)
     @JsonIgnore

@@ -8,7 +8,6 @@ import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Set;
 
 /**
  * User entity for RBAC system
@@ -84,15 +83,11 @@ public class User {
     @Builder.Default
     private List<UserRole> userRoles = new java.util.ArrayList<>();
 
-    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
-    @JoinTable(name = "user_permissions", joinColumns = @JoinColumn(name = "user_id"), inverseJoinColumns = @JoinColumn(name = "permission_id"), indexes = {
-            @Index(name = "idx_user_permission", columnList = "user_id"),
-            @Index(name = "idx_permission_id", columnList = "permission_id")
-    }, uniqueConstraints = {
-            @UniqueConstraint(name = "uk_user_permission", columnNames = { "user_id", "permission_id" })
-    })
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonIgnore
-    private Set<Permission> permissions;
+    @ToString.Exclude
+    @Builder.Default
+    private List<UserPermission> userPermissions = new java.util.ArrayList<>();
 
     // === LIFECYCLE CALLBACKS ===
     @PrePersist

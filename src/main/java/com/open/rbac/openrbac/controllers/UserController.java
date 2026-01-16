@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.*;
 public class UserController {
 
     private final UserService userService;
-    private final PermissionService permissionService;
 
     @GetMapping
     public ResponseEntity<?> getAllUsers(
