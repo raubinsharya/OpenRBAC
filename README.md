@@ -8,6 +8,32 @@ OpenRBAC is a high-performance, developer-friendly **Role-Based Access Control (
 
 ---
 
+### 🏷️ Keywords & Topics
+`RBAC` • `Access Control` • `IAM` • `Spring Boot` • `Keycloak` • `Multi-tenancy` • `Authorization` • `Java Security` • `User Management` • `Permission Management` • `Hierarchical Groups`
+
+---
+
+## 🏁 Project Status & Roadmap
+
+### ✅ Available Now
+- **Multi-Tenancy:** Robust Realm-based isolation.
+- **Hierarchical Groups:** Full support for nested groups and membership inheritance.
+- **Granular RBAC:** Direct, Role, and Group-based permission mapping.
+- **Temporary Access:** Expiry date support for all security assignments.
+- **Annotation Security:** AOP-driven access control for Spring Boot controllers.
+- **Keycloak Integration:** Standard OIDC/JWT support for identity.
+- **Advanced Filtering:** Powerful specification-based API for searching and pagination.
+
+### 🚀 Coming Soon (Planned)
+- **Admin UI:** A sleek, modern dashboard for managing realms, users, and permissions visually.
+- **Audit Logging:** Detailed event streaming and compliance reporting for every security change.
+- **ABAC Support:** Introduction of Attribute-Based Access Control for more dynamic policies.
+- **API Keys:** Management of programmatic access keys and client credentials.
+- **Redis Cache:** Centralized caching for near-zero latency authorization checks.
+- **Webhooks:** Real-time notifications for security events (e.g., membership expiry).
+
+---
+
 ## ✨ Key Features
 
 - 🌍 **Multi-Tenancy (Realms):** Isolate data and configuration across different organizations or environments using Realms.
