@@ -14,9 +14,12 @@ import java.time.LocalDateTime;
 public record UserPermissionDTO(
         @JsonUnwrapped @JsonIgnoreProperties({
                 "id", "status", "name", "description", "resource", "action", "createdAt",
+                "userId",
                 "updatedAt" }) PermissionDTO permission,
         Long permissionId,
-        Long userPermissionId,
+        String resource,
+        String action,
+        Long id,
         Long userId,
         String userName,
         String permissionName,
@@ -30,9 +33,11 @@ public record UserPermissionDTO(
         if (userPermission == null)
             return null;
         return UserPermissionDTO.builder()
-                .userPermissionId(userPermission.getId())
+                .id(userPermission.getId())
                 .userId(userPermission.getUser().getId())
                 .permissionId(userPermission.getPermission().getId())
+                .resource(userPermission.getPermission().getResource())
+                .action(userPermission.getPermission().getAction())
                 .permission(PermissionDTO.from(userPermission.getPermission()))
                 .userName(userPermission.getUser().getUsername())
                 .permissionName(userPermission.getPermission().getName())

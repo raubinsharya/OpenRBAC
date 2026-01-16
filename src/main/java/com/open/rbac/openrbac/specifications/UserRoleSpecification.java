@@ -129,4 +129,12 @@ public class UserRoleSpecification {
             return cb.greaterThanOrEqualTo(root.get("expiryDate"), date);
         };
     }
+
+    public static Specification<UserRole> isNotExpired() {
+        return (root, query, cb) -> {
+            return cb.or(
+                    cb.isNull(root.get("expiryDate")),
+                    cb.greaterThan(root.get("expiryDate"), LocalDateTime.now()));
+        };
+    }
 }

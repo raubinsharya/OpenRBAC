@@ -137,4 +137,12 @@ public class UserPermissionSpecification {
             return cb.greaterThanOrEqualTo(root.get("expiryDate"), date);
         };
     }
+
+    public static Specification<UserPermission> isNotExpired() {
+        return (root, query, cb) -> {
+            return cb.or(
+                    cb.isNull(root.get("expiryDate")),
+                    cb.greaterThan(root.get("expiryDate"), LocalDateTime.now()));
+        };
+    }
 }

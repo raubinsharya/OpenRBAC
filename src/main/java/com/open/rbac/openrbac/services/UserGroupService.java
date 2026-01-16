@@ -37,6 +37,7 @@ public class UserGroupService {
     public PagedResponse<UserGroupDTO> getGroupMembers(Long realmId, Long id, UserGroupFilterRequest filter) {
         Specification<UserGroup> spec = GroupMemberSpecification.ofGroup(id, realmId)
                 .and(BaseSpecification.withBaseFilters(filter))
+                .and(GroupMemberSpecification.isNotExpired())
                 .and(GroupMemberSpecification.hasKeycloakUserId(filter.getKeycloakUserId()))
                 .and(GroupMemberSpecification.hasDisplayName(filter.getDisplayName()))
                 .and(GroupMemberSpecification.hasEmail(filter.getEmail()))

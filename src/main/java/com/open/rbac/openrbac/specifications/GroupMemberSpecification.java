@@ -198,4 +198,12 @@ public class GroupMemberSpecification {
             }
         };
     }
+
+    public static Specification<UserGroup> isNotExpired() {
+        return (root, query, cb) -> {
+            return cb.or(
+                    cb.isNull(root.get("expiryDate")),
+                    cb.greaterThan(root.get("expiryDate"), LocalDateTime.now()));
+        };
+    }
 }

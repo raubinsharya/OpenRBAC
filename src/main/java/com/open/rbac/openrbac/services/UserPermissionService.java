@@ -107,6 +107,7 @@ public class UserPermissionService {
 
         Specification<UserPermission> spec = Specification.allOf(
                 UserPermissionSpecification.ofUser(userId, realmId),
+                UserPermissionSpecification.isNotExpired(),
                 UserPermissionSpecification.hasPermissionName(filter.getPermissionName()),
                 UserPermissionSpecification.hasResource(filter.getResource()),
                 UserPermissionSpecification.hasAction(filter.getAction()),

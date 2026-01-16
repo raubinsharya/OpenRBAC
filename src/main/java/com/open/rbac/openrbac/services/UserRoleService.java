@@ -106,6 +106,7 @@ public class UserRoleService {
 
         Specification<UserRole> spec = Specification.allOf(
                 UserRoleSpecification.ofUser(userId, realmId),
+                UserRoleSpecification.isNotExpired(),
                 UserRoleSpecification.hasRoleName(filter.getRoleName()),
                 UserRoleSpecification.hasRoleStatus(filter.getRoleStatus()),
                 UserRoleSpecification.hasUserStatus(filter.getUserStatus()),
