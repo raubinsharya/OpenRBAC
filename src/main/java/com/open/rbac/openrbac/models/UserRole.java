@@ -14,12 +14,12 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "user_roles", indexes = {
-        @Index(name = "idx_user_role_user", columnList = "user_id"),
-        @Index(name = "idx_user_role_role", columnList = "role_id"),
-        @Index(name = "idx_user_role_expiry", columnList = "expiry_date"),
-        @Index(name = "idx_user_role_active", columnList = "is_active")
+                @Index(name = "idx_user_role_user", columnList = "user_id"),
+                @Index(name = "idx_user_role_role", columnList = "role_id"),
+                @Index(name = "idx_user_role_expiry", columnList = "expiry_date"),
+                @Index(name = "idx_user_role_active", columnList = "is_active")
 }, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_role", columnNames = { "user_id", "role_id" })
+                @UniqueConstraint(name = "uk_user_role", columnNames = { "user_id", "role_id" })
 })
 @Data
 @NoArgsConstructor
@@ -27,34 +27,34 @@ import java.time.LocalDateTime;
 @Builder
 public class UserRole {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+        @Id
+        @GeneratedValue(strategy = GenerationType.IDENTITY)
+        private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "user_id", nullable = false)
+        private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id", nullable = false)
-    private Role role;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "role_id", nullable = false)
+        private Role role;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    @Builder.Default
-    private LocalDateTime createdAt = LocalDateTime.now();
+        @Column(name = "created_at", nullable = false, updatable = false)
+        @Builder.Default
+        private LocalDateTime createdAt = LocalDateTime.now();
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "assigned_by")
-    private User assignedBy;
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "assigned_by")
+        private User assignedBy;
 
-    /**
-     * Expiry date for temporary role assignment
-     * NULL means permanent assignment
-     */
-    @Column(name = "expiry_date")
-    private LocalDateTime expiryDate;
+        /**
+         * Expiry date for temporary role assignment
+         * NULL means permanent assignment
+         */
+        @Column(name = "expiry_date")
+        private LocalDateTime expiryDate;
 
-    @Column(name = "is_active", nullable = false)
-    @Builder.Default
-    private Boolean isActive = true;
+        @Column(name = "is_active", nullable = false)
+        @Builder.Default
+        private Boolean isActive = true;
 }

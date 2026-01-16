@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 @Builder
 public record UserRoleDTO(
-        @JsonUnwrapped @JsonIgnoreProperties( {
+        @JsonUnwrapped @JsonIgnoreProperties({
                 "id", "status", "name", "description", "createdAt", "updatedAt", "isSystemRole" }) RoleDTO role,
         Long roleId,
         Long userRoleId,
@@ -24,7 +24,7 @@ public record UserRoleDTO(
         LocalDateTime assignedAt,
         String assignedBy,
         LocalDateTime expiryDate,
-        Boolean isActive){
+        Boolean isActive) {
     public static UserRoleDTO from(UserRole userRole) {
         if (userRole == null)
             return null;

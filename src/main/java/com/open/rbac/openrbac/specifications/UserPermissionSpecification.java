@@ -110,7 +110,7 @@ public class UserPermissionSpecification {
         return (root, query, cb) -> {
             if (date == null)
                 return null;
-            return cb.lessThanOrEqualTo(root.get("assignedAt"), date);
+            return cb.lessThanOrEqualTo(root.get("createdAt"), date);
         };
     }
 
@@ -118,7 +118,7 @@ public class UserPermissionSpecification {
         return (root, query, cb) -> {
             if (date == null)
                 return null;
-            return cb.greaterThanOrEqualTo(root.get("assignedAt"), date);
+            return cb.greaterThanOrEqualTo(root.get("createdAt"), date);
         };
     }
 
