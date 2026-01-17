@@ -52,4 +52,22 @@ public class UserPermissionController {
         userPermissionService.removePermissionsFromUser(realmId, userId, request);
         return ResponseEntity.ok(Map.of("message", "Permissions removed successfully"));
     }
+
+    @GetMapping("/resources")
+    public ResponseEntity<?> getEffectiveUserResources(
+            @PathVariable Long realmId,
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "false") boolean fromRole,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(userPermissionService.getEffectiveUserResources(realmId, userId, pageable, fromRole));
+    }
+
+    @GetMapping("/actions")
+    public ResponseEntity<?> getEffectiveUserActions(
+            @PathVariable Long realmId,
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "false") boolean fromRole,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(userPermissionService.getEffectiveUserActions(realmId, userId, pageable, fromRole));
+    }
 }
