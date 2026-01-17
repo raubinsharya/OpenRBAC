@@ -1,8 +1,6 @@
 package com.open.rbac.openrbac.repositories;
 
-import com.open.rbac.openrbac.models.Permission;
 import com.open.rbac.openrbac.models.RolePermission;
-import jakarta.validation.constraints.NotEmpty;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -11,7 +9,6 @@ import org.springframework.stereotype.Repository;
 
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 @Repository
@@ -34,4 +31,28 @@ public interface RolePermissionRepository
                         @Param("roleId") Long roleId,
                         @Param("resource") String resource,
                         @Param("action") String action);
+
+        @Query("""
+                        select distinct rp.permission.resource
+                        from RolePermission rp
+                        where rp.role.id = :roleId
+                        and rp.role.realm.id = :realmId
+                        and rp.permission.status = 'ACTIVE'
+                        """)
+        org.springframework.data.domain.Page<String> findDistinctResourcesByRole(
+                        @Param("realmId") Long realmId,
+                        @Param("roleId") Long roleId,
+                        org.springframework.data.domain.Pageable pageable);
+
+        @Query("""
+                        select distinct rp.permission.action
+                        from RolePermission rp
+                        where rp.role.id = :roleId
+                        and rp.role.realm.id = :realmId
+                        and rp.permission.status = 'ACTIVE'
+                        """)
+        org.springframework.data.domain.Page<String> findDistinctActionsByRole(
+                        @Param("realmId") Long realmId,
+                        @Param("roleId") Long roleId,
+                        org.springframework.data.domain.Pageable pageable);
 }

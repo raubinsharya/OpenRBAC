@@ -53,4 +53,20 @@ public class RolePermissionController {
         rolePermissionService.removePermissionsFromRole(realmId, id, request);
         return ResponseEntity.ok(Map.of("message", "Permissions removed successfully"));
     }
+
+    @GetMapping("/resources")
+    public ResponseEntity<?> getRoleResources(
+            @PathVariable Long realmId,
+            @PathVariable Long id,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(rolePermissionService.getRoleResources(realmId, id, pageable));
+    }
+
+    @GetMapping("/actions")
+    public ResponseEntity<?> getRoleActions(
+            @PathVariable Long realmId,
+            @PathVariable Long id,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(rolePermissionService.getRoleActions(realmId, id, pageable));
+    }
 }

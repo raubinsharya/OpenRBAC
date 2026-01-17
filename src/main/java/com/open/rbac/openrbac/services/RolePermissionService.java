@@ -127,4 +127,24 @@ public class RolePermissionService {
         }
         return rolePermissionRepository.checkPermission(realmId, roleId, resource, action);
     }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<String> getRoleResources(Long realmId, Long roleId,
+            org.springframework.data.domain.Pageable pageable) {
+        if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
+            throw new EntityNotFoundException("Role not found");
+        }
+        return PagedResponse.fromPage(rolePermissionRepository.findDistinctResourcesByRole(realmId, roleId, pageable),
+                s -> s);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<String> getRoleActions(Long realmId, Long roleId,
+            org.springframework.data.domain.Pageable pageable) {
+        if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
+            throw new EntityNotFoundException("Role not found");
+        }
+        return PagedResponse.fromPage(rolePermissionRepository.findDistinctActionsByRole(realmId, roleId, pageable),
+                s -> s);
+    }
 }
