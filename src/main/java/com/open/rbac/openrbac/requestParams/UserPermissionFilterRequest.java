@@ -4,6 +4,7 @@ import com.open.rbac.openrbac.annotations.DateStrategy;
 import com.open.rbac.openrbac.annotations.FlexibleDate;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
@@ -24,6 +25,9 @@ public class UserPermissionFilterRequest extends BaseFilter {
     private String assignedBy;
     private EntityStatus userStatus;
     private Boolean isActive;
+
+    @Builder.Default
+    private boolean fromRole = false;
 
     @FlexibleDate(strategy = DateStrategy.END_OF_DAY)
     private LocalDateTime assignedAtBefore;

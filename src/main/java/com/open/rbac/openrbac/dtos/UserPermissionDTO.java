@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import com.open.rbac.openrbac.models.UserPermission;
+import com.open.rbac.openrbac.models.UserEffectivePermission;
 import lombok.Builder;
 
 import java.time.LocalDateTime;
@@ -28,7 +29,8 @@ public record UserPermissionDTO(
                 LocalDateTime assignedAt,
                 String assignedBy,
                 LocalDateTime expiryDate,
-                Boolean isActive) {
+                Boolean isActive,
+                String assignmentType) {
         public static UserPermissionDTO from(UserPermission userPermission) {
                 if (userPermission == null)
                         return null;
@@ -49,6 +51,31 @@ public record UserPermissionDTO(
                                                 : "Unknown")
                                 .expiryDate(userPermission.getExpiryDate())
                                 .isActive(userPermission.getIsActive())
+                                .assignmentType("DIRECT")
+                                .build();
+        }
+
+        public static UserPermissionDTO from(UserEffectivePermission effectivePermission) {
+                if (effectivePermission == null)
+                        return null;
+                return UserPermissionDTO.builder()
+                                .id(null) // Synthetic ID inside EffectivePermission, DTO expects Long
+                                .userId(effectivePermission.getUser().getId())
+                                .permissionId(effectivePermission.getPermission().getId())
+                                .resource(effectivePermission.getPermission().getResource())
+                                .action(effectivePermission.getPermission().getAction())
+                                .permission(PermissionDTO.from(effectivePermission.getPermission()))
+                                .userName(effectivePermission.getUser().getUsername())
+                                .permissionName(effectivePermission.getPermission().getName())
+                                .userStatus(effectivePermission.getUser().getStatus())
+                                .permissionStatus(effectivePermission.getPermission().getStatus())
+                                .assignedAt(effectivePermission.getCreatedAt())
+                                .assignedBy(effectivePermission.getAssignedBy() != null
+                                                ? effectivePermission.getAssignedBy().getDisplayName()
+                                                : "Unknown")
+                                .expiryDate(effectivePermission.getExpiryDate())
+                                .isActive(effectivePermission.getIsActive())
+                                .assignmentType(effectivePermission.getAssignmentType())
                                 .build();
         }
 }

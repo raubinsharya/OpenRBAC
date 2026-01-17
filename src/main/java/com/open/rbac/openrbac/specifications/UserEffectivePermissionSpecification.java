@@ -1,7 +1,7 @@
 package com.open.rbac.openrbac.specifications;
 
 import com.open.rbac.openrbac.enums.EntityStatus;
-import com.open.rbac.openrbac.models.UserPermission;
+import com.open.rbac.openrbac.models.UserEffectivePermission;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
@@ -10,23 +10,26 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-public class UserPermissionSpecification {
+public class UserEffectivePermissionSpecification {
 
-    public static Specification<UserPermission> ofUser(Long userId, Long realmId) {
+    public static Specification<UserEffectivePermission> ofUser(Long userId, Long realmId) {
         return (root, query, cb) -> {
             if (userId == null || realmId == null) {
                 return null;
             }
+            // Fetch relations to avoid N+1 issues - only for data query, not count query
+            if (query != null && query.getResultType() != Long.class && query.getResultType() != long.class) {
+                root.fetch("user", JoinType.INNER);
+                root.fetch("permission", JoinType.INNER);
+                root.fetch("assignedBy", JoinType.LEFT);
+            }
+
+            // Joins to user/permission and their realms
             var userJoin = root.join("user", JoinType.INNER);
             var userRealmJoin = userJoin.join("realm", JoinType.INNER);
 
             var permissionJoin = root.join("permission", JoinType.INNER);
             var permissionRealmJoin = permissionJoin.join("realm", JoinType.INNER);
-
-            // Fetch relations to avoid N+1 issues
-            root.fetch("user", JoinType.INNER);
-            root.fetch("permission", JoinType.INNER);
-            root.fetch("assignedBy", JoinType.LEFT);
 
             return cb.and(
                     cb.equal(userJoin.get("id"), userId),
@@ -35,7 +38,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> hasPermissionName(String name) {
+    public static Specification<UserEffectivePermission> hasPermissionName(String name) {
         return (root, query, cb) -> {
             if (name == null || name.isEmpty())
                 return null;
@@ -43,7 +46,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> hasResource(String resource) {
+    public static Specification<UserEffectivePermission> hasResource(String resource) {
         return (root, query, cb) -> {
             if (resource == null || resource.isEmpty())
                 return null;
@@ -51,7 +54,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> hasAction(String action) {
+    public static Specification<UserEffectivePermission> hasAction(String action) {
         return (root, query, cb) -> {
             if (action == null || action.isEmpty())
                 return null;
@@ -59,7 +62,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> hasPermissionStatus(EntityStatus status) {
+    public static Specification<UserEffectivePermission> hasPermissionStatus(EntityStatus status) {
         return (root, query, cb) -> {
             if (status == null)
                 return null;
@@ -67,7 +70,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> hasUserStatus(EntityStatus status) {
+    public static Specification<UserEffectivePermission> hasUserStatus(EntityStatus status) {
         return (root, query, cb) -> {
             if (status == null)
                 return null;
@@ -75,7 +78,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> assignedBy(String assignedBy) {
+    public static Specification<UserEffectivePermission> assignedBy(String assignedBy) {
         return (root, query, cb) -> {
             if (assignedBy == null || assignedBy.isEmpty()) {
                 return null;
@@ -98,7 +101,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> isActive(Boolean isActive) {
+    public static Specification<UserEffectivePermission> isActive(Boolean isActive) {
         return (root, query, cb) -> {
             if (isActive == null)
                 return null;
@@ -106,7 +109,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> assignedAtBefore(LocalDateTime date) {
+    public static Specification<UserEffectivePermission> assignedAtBefore(LocalDateTime date) {
         return (root, query, cb) -> {
             if (date == null)
                 return null;
@@ -114,7 +117,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> assignedAtAfter(LocalDateTime date) {
+    public static Specification<UserEffectivePermission> assignedAtAfter(LocalDateTime date) {
         return (root, query, cb) -> {
             if (date == null)
                 return null;
@@ -122,7 +125,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> expiryDateBefore(LocalDateTime date) {
+    public static Specification<UserEffectivePermission> expiryDateBefore(LocalDateTime date) {
         return (root, query, cb) -> {
             if (date == null)
                 return null;
@@ -130,7 +133,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> expiryDateAfter(LocalDateTime date) {
+    public static Specification<UserEffectivePermission> expiryDateAfter(LocalDateTime date) {
         return (root, query, cb) -> {
             if (date == null)
                 return null;
@@ -138,7 +141,7 @@ public class UserPermissionSpecification {
         };
     }
 
-    public static Specification<UserPermission> isNotExpired() {
+    public static Specification<UserEffectivePermission> isNotExpired() {
         return (root, query, cb) -> {
             return cb.or(
                     cb.isNull(root.get("expiryDate")),
@@ -146,4 +149,14 @@ public class UserPermissionSpecification {
         };
     }
 
+    public static Specification<UserEffectivePermission> fromRole(boolean includeRoleParams) {
+        return (root, query, cb) -> {
+            // If includeRoleParams is TRUE, we show everything (Direct + Role).
+            // If includeRoleParams is FALSE, we ONLY show DIRECT.
+            if (includeRoleParams) {
+                return null; // No filtering, show all
+            }
+            return cb.equal(root.get("assignmentType"), "DIRECT");
+        };
+    }
 }
