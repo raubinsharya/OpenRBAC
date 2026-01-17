@@ -12,28 +12,35 @@ import java.time.LocalDateTime;
 
 @Entity
 @Immutable
-@Subselect("SELECT " +
-        "    concat('D', up.id) as id, " +
-        "    up.user_id, " +
-        "    up.permission_id, " +
-        "    up.assigned_by, " +
-        "    up.created_at, " +
-        "    up.expiry_date, " +
-        "    up.is_active, " +
-        "    'DIRECT' as assignment_type " +
-        "FROM user_permissions up " +
-        "UNION ALL " +
-        "SELECT " +
-        "    concat('R', ur.id, 'P', rp.id) as id, " +
-        "    ur.user_id, " +
-        "    rp.permission_id, " +
-        "    ur.assigned_by, " +
-        "    ur.created_at, " +
-        "    ur.expiry_date, " +
-        "    (CASE WHEN ur.is_active IS TRUE THEN true ELSE false END) as is_active, " +
-        "    'ROLE' as assignment_type " +
-        "FROM user_roles ur " +
-        "JOIN role_permissions rp ON ur.role_id = rp.role_id")
+@Subselect("""
+        SELECT
+            concat('D', up.id) as id,
+            up.user_id,
+            up.permission_id,
+            up.assigned_by,
+            up.created_at,
+            up.expiry_date,
+            up.is_active,
+            'DIRECT' as assignment_type
+        FROM user_permissions up
+        UNION ALL
+        SELECT
+            concat('R', ur.id, 'P', rp.id) as id,
+            ur.user_id,
+            rp.permission_id,
+            ur.assigned_by,
+            ur.created_at,
+            CASE
+               WHEN ur.expiry_date IS NULL THEN rp.expiry_date
+               WHEN rp.expiry_date IS NULL THEN ur.expiry_date
+               WHEN ur.expiry_date < rp.expiry_date THEN ur.expiry_date
+               ELSE rp.expiry_date
+            END as expiry_date,
+            (CASE WHEN ur.is_active IS TRUE THEN true ELSE false END) as is_active,
+            'ROLE' as assignment_type
+        FROM user_roles ur
+        JOIN role_permissions rp ON ur.role_id = rp.role_id
+        """)
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
