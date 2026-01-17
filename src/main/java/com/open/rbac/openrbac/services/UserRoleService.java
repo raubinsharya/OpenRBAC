@@ -119,4 +119,23 @@ public class UserRoleService {
 
         return PagedResponse.fromPage(userRoleRepository.findAll(spec, filter.toPageable()), UserRoleDTO::from);
     }
+
+    @Transactional(readOnly = true)
+    public boolean hasRole(Long realmId, Long userId, Long roleId, String roleName) {
+        if (roleId == null && (roleName == null || roleName.isEmpty())) {
+            throw new IllegalArgumentException("Either roleId or roleName must be provided");
+        }
+
+        // Verify user exists in the realm first
+        boolean userExists = userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
+        if (!userExists) {
+            throw new EntityNotFoundException("User not found");
+        }
+
+        if (roleId != null) {
+            return userRoleRepository.existsByUserIdAndRoleIdAndRole_Realm_Id(userId, roleId, realmId);
+        } else {
+            return userRoleRepository.existsByUserIdAndRole_NameAndRole_Realm_Id(userId, roleName, realmId);
+        }
+    }
 }

@@ -22,6 +22,10 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Long>, JpaSp
 
     boolean existsByUserIdAndRoleId(Long userId, Long roleId);
 
+    boolean existsByUserIdAndRoleIdAndRole_Realm_Id(Long userId, Long roleId, Long realmId);
+
+    boolean existsByUserIdAndRole_NameAndRole_Realm_Id(Long userId, String roleName, Long realmId);
+
     @Query("SELECT ur.role.id FROM UserRole ur WHERE ur.user.id = :userId AND ur.role.id IN :roleIds")
     List<Long> findExistingRoleIds(Long userId, Collection<Long> roleIds);
 }
