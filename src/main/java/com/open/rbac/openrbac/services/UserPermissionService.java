@@ -145,12 +145,16 @@ public class UserPermissionService {
         }
 
         @Transactional(readOnly = true)
-        public boolean checkPermission(Long realmId, Long userId, String resource, String action,
-                        String assignmentType) {
+        public boolean checkPermission(Long realmId, Long userId,
+                        com.open.rbac.openrbac.requestParams.CheckPermissionRequest request) {
                 if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
                         throw new EntityNotFoundException("User not found");
                 }
-                return userEffectivePermissionRepository.checkPermission(realmId, userId, resource, action,
-                                assignmentType);
+                if (request.getResource() == null && request.getAction() == null
+                                && request.getPermissionName() == null) {
+                        return false;
+                }
+                return userEffectivePermissionRepository.checkPermission(realmId, userId, request.getResource(),
+                                request.getAction(), request.getAssignmentType(), request.getPermissionName());
         }
 }

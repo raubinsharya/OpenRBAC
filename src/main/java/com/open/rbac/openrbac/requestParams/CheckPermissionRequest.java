@@ -9,4 +9,5 @@ public class CheckPermissionRequest {
     private String resource;
     private String action;
     private String assignmentType;
+    private String permissionName;
 }
