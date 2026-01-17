@@ -121,11 +121,17 @@ public class RolePermissionService {
     }
 
     @Transactional(readOnly = true)
-    public boolean checkRolePermission(Long realmId, Long roleId, String resource, String action) {
+    public boolean checkRolePermission(Long realmId, Long roleId,
+            com.open.rbac.openrbac.requestParams.CheckPermissionRequest request) {
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
-        return rolePermissionRepository.checkPermission(realmId, roleId, resource, action);
+        if (request.getResource() == null && request.getAction() == null
+                && request.getPermissionName() == null) {
+            return false;
+        }
+        return rolePermissionRepository.checkPermission(realmId, roleId, request.getResource(), request.getAction(),
+                request.getPermissionName());
     }
 
     @Transactional(readOnly = true)

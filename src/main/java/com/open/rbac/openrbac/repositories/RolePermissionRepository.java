@@ -21,16 +21,24 @@ public interface RolePermissionRepository
 
         void deleteByRoleIdAndPermissionIdIn(Long roleId, Collection<Long> permissionIds);
 
-        @Query("SELECT CASE WHEN COUNT(rp) > 0 THEN true ELSE false END FROM RolePermission rp " +
-                        "WHERE rp.role.id = :roleId AND rp.role.realm.id = :realmId " +
-                        "AND rp.role.status = com.open.rbac.openrbac.enums.EntityStatus.ACTIVE AND rp.permission.status = com.open.rbac.openrbac.enums.EntityStatus.ACTIVE "
-                        +
-                        "AND (rp.expiryDate IS NULL OR rp.expiryDate > CURRENT_TIMESTAMP) " +
-                        "AND LOWER(rp.permission.resource) = LOWER(:resource) AND LOWER(rp.permission.action) = LOWER(:action)")
+        @Query("""
+                        SELECT CASE WHEN COUNT(rp) > 0 THEN true ELSE false END
+                        FROM RolePermission rp
+                        WHERE rp.role.id = :roleId
+                        AND rp.role.realm.id = :realmId
+                        AND rp.permission.realm.id = :realmId
+                        AND rp.role.status = com.open.rbac.openrbac.enums.EntityStatus.ACTIVE
+                        AND rp.permission.status = com.open.rbac.openrbac.enums.EntityStatus.ACTIVE
+                        AND (rp.expiryDate IS NULL OR rp.expiryDate > CURRENT_TIMESTAMP)
+                        AND (:resource IS NULL OR LOWER(rp.permission.resource) = LOWER(CAST(:resource AS string)))
+                        AND (:action IS NULL OR LOWER(rp.permission.action) = LOWER(CAST(:action AS string)))
+                        AND (:permissionName IS NULL OR LOWER(rp.permission.name) = LOWER(CAST(:permissionName AS string)))
+                        """)
         boolean checkPermission(@Param("realmId") Long realmId,
                         @Param("roleId") Long roleId,
                         @Param("resource") String resource,
-                        @Param("action") String action);
+                        @Param("action") String action,
+                        @Param("permissionName") String permissionName);
 
         @Query("""
                         select distinct rp.permission.resource

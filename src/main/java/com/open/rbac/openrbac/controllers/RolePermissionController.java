@@ -30,9 +30,8 @@ public class RolePermissionController {
     public ResponseEntity<?> checkPermission(
             @PathVariable Long realmId,
             @PathVariable Long id,
-            @RequestParam String resource,
-            @RequestParam String action) {
-        boolean hasPermission = rolePermissionService.checkRolePermission(realmId, id, resource, action);
+            @ModelAttribute com.open.rbac.openrbac.requestParams.CheckPermissionRequest request) {
+        boolean hasPermission = rolePermissionService.checkRolePermission(realmId, id, request);
         return ResponseEntity.ok(Map.of("hasPermission", hasPermission));
     }
 
