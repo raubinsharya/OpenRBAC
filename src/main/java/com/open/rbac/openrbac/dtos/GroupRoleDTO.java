@@ -30,11 +30,25 @@ public record GroupRoleDTO(
         Boolean allowInheritance,
         Integer maxInheritanceDepth) {
     public static GroupRoleDTO from(GroupRole groupRole) {
+        return from(groupRole, null);
+    }
+
+    public static GroupRoleDTO from(GroupRole groupRole, Long requestedGroupId) {
         if (groupRole == null)
             return null;
+
+        boolean effectiveIsInherited = (requestedGroupId != null
+                && !groupRole.getGroup().getId().equals(requestedGroupId))
+                || Boolean.TRUE.equals(groupRole.getIsInherited());
+
+        Long effectiveSourceGroupId = (requestedGroupId != null
+                && !groupRole.getGroup().getId().equals(requestedGroupId))
+                        ? groupRole.getGroup().getId()
+                        : (groupRole.getSourceGroup() != null ? groupRole.getSourceGroup().getId() : null);
+
         return GroupRoleDTO.builder()
                 .groupRoleId(groupRole.getId())
-                .groupId(groupRole.getGroup().getId())
+                .groupId(requestedGroupId != null ? requestedGroupId : groupRole.getGroup().getId())
                 .roleId(groupRole.getRole().getId())
                 .role(RoleDTO.from(groupRole.getRole()))
                 .groupName(groupRole.getGroup().getName())
@@ -45,8 +59,8 @@ public record GroupRoleDTO(
                 .assignedBy(groupRole.getAssignedBy() != null ? groupRole.getAssignedBy().getDisplayName() : "Unknown")
                 .roleExpiryDate(groupRole.getExpiryDate())
                 .isActive(groupRole.getIsActive())
-                .isInherited(groupRole.getIsInherited())
-                .sourceGroupId(groupRole.getSourceGroup() != null ? groupRole.getSourceGroup().getId() : null)
+                .isInherited(effectiveIsInherited)
+                .sourceGroupId(effectiveSourceGroupId)
                 .allowInheritance(groupRole.getAllowInheritance())
                 .maxInheritanceDepth(groupRole.getMaxInheritanceDepth())
                 .build();

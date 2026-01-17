@@ -15,9 +15,13 @@ public interface GroupRoleRepository extends JpaRepository<GroupRole, Long>, Jpa
 
     List<GroupRole> findByRoleId(Long roleId);
 
+    List<GroupRole> findByGroupIdAndRoleIdIn(Long groupId, Collection<Long> roleIds);
+
     void deleteByGroupIdAndRoleId(Long groupId, Long roleId);
 
     void deleteByGroupIdAndRoleIdIn(Long groupId, Collection<Long> roleIds);
+
+    void deleteBySourceGroupIdAndRoleIdIn(Long sourceGroupId, Collection<Long> roleIds);
 
     boolean existsByGroupIdAndRoleId(Long groupId, Long roleId);
 

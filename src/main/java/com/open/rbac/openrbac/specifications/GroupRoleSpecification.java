@@ -8,11 +8,13 @@ import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class GroupRoleSpecification {
 
-    public static Specification<GroupRole> ofGroup(Long groupId, Long realmId) {
+    public static Specification<GroupRole> ofGroup(Long groupId, Collection<Long> ancestorIds, Integer groupLevel,
+            Long realmId) {
         return (root, query, cb) -> {
             if (groupId == null || realmId == null) {
                 return null;
@@ -31,8 +33,30 @@ public class GroupRoleSpecification {
                 root.fetch("sourceGroup", JoinType.LEFT);
             }
 
+            // Direct assignment to the requested group
+            Predicate isDirect = cb.equal(groupJoin.get("id"), groupId);
+
+            Predicate groupPredicate;
+            if (ancestorIds != null && !ancestorIds.isEmpty()) {
+                // Inherited assignment logic
+                Predicate isInheritedCandidate = cb.and(
+                        groupJoin.get("id").in(ancestorIds),
+                        cb.equal(root.get("allowInheritance"), true));
+
+                // Depth check: groupLevel - ancestor.level <= maxInheritanceDepth
+                Predicate depthValid = cb.or(
+                        cb.isNull(root.get("maxInheritanceDepth")),
+                        cb.lessThanOrEqualTo(
+                                cb.diff(groupLevel, groupJoin.get("level")),
+                                root.get("maxInheritanceDepth")));
+
+                groupPredicate = cb.or(isDirect, cb.and(isInheritedCandidate, depthValid));
+            } else {
+                groupPredicate = isDirect;
+            }
+
             return cb.and(
-                    cb.equal(groupJoin.get("id"), groupId),
+                    groupPredicate,
                     cb.equal(groupRealmJoin.get("id"), realmId),
                     cb.equal(roleRealmJoin.get("id"), realmId));
         };
@@ -93,11 +117,15 @@ public class GroupRoleSpecification {
         };
     }
 
-    public static Specification<GroupRole> isInherited(Boolean isInherited) {
+    public static Specification<GroupRole> isInherited(Long requestedGroupId, Boolean isInherited) {
         return (root, query, cb) -> {
-            if (isInherited == null)
+            if (isInherited == null || requestedGroupId == null)
                 return null;
-            return cb.equal(root.get("isInherited"), isInherited);
+            if (isInherited) {
+                return cb.notEqual(root.get("group").get("id"), requestedGroupId);
+            } else {
+                return cb.equal(root.get("group").get("id"), requestedGroupId);
+            }
         };
     }
 
@@ -138,6 +166,14 @@ public class GroupRoleSpecification {
             return cb.or(
                     cb.isNull(root.get("expiryDate")),
                     cb.greaterThan(root.get("expiryDate"), LocalDateTime.now()));
+        };
+    }
+
+    public static Specification<GroupRole> hasRoleId(Long roleId) {
+        return (root, query, cb) -> {
+            if (roleId == null)
+                return null;
+            return cb.equal(root.get("role").get("id"), roleId);
         };
     }
 }
