@@ -26,6 +26,16 @@ public class UserPermissionController {
         return ResponseEntity.ok(userPermissionService.getUserPermissions(realmId, userId, filter));
     }
 
+    @GetMapping("/check")
+    public ResponseEntity<?> checkPermission(
+            @PathVariable Long realmId,
+            @PathVariable Long userId,
+            @ModelAttribute com.open.rbac.openrbac.requestParams.CheckPermissionRequest request) {
+        boolean hasPermission = userPermissionService.checkPermission(realmId, userId, request.getResource(),
+                request.getAction(), request.getAssignmentType());
+        return ResponseEntity.ok(Map.of("hasPermission", hasPermission));
+    }
+
     @PostMapping
     public ResponseEntity<?> addPermissions(
             @PathVariable Long realmId,

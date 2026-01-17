@@ -143,4 +143,14 @@ public class UserPermissionService {
                 return PagedResponse.fromPage(userEffectivePermissionRepository.findAll(spec, filter.toPageable()),
                                 p -> UserPermissionDTO.from(p));
         }
+
+        @Transactional(readOnly = true)
+        public boolean checkPermission(Long realmId, Long userId, String resource, String action,
+                        String assignmentType) {
+                if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
+                        throw new EntityNotFoundException("User not found");
+                }
+                return userEffectivePermissionRepository.checkPermission(realmId, userId, resource, action,
+                                assignmentType);
+        }
 }
