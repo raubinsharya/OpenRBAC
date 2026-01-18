@@ -14,6 +14,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +38,7 @@ public class GroupService {
         return PagedResponse.fromPage(groups, GroupDTO::from);
     }
 
-    @RequireAnyRole(value = {"realm-admin"})
+    @RequireAnyRole(value = { "realm-admin" })
     @Transactional(rollbackFor = Exception.class)
     public Group createGroup(long realmId, CreateGroupRequest createGroupRequest) {
         var realm = realmRepository.findById(realmId)
@@ -71,15 +75,15 @@ public class GroupService {
 
     public GroupDTO getHierarchy(Long realmId, Long groupId) {
         // Fetch specific group, its ancestors, and all its descendants in one query
-        java.util.List<Group> hierarchy = groupRepository.findGroupHierarchy(realmId, groupId);
+        List<Group> hierarchy = groupRepository.findGroupHierarchy(realmId, groupId);
 
         if (hierarchy.isEmpty()) {
             throw new IllegalArgumentException("Group not found");
         }
 
         // Map of ID -> Fully loaded Group Entity (to avoid using lazy proxies)
-        java.util.Map<Long, Group> groupMap = hierarchy.stream()
-                .collect(java.util.stream.Collectors.toMap(Group::getId, g -> g, (a, b) -> a));
+        Map<Long, Group> groupMap = hierarchy.stream()
+                .collect(Collectors.toMap(Group::getId, g -> g, (a, b) -> a));
 
         // The requested node
         Group requestedNode = groupMap.get(groupId);
@@ -88,9 +92,9 @@ public class GroupService {
         }
 
         // MAP: ParentID -> List<Children> (for building descendants tree)
-        java.util.Map<Long, java.util.List<Group>> childrenMap = hierarchy.stream()
+        Map<Long, List<Group>> childrenMap = hierarchy.stream()
                 .filter(g -> g.getParentGroup() != null)
-                .collect(java.util.stream.Collectors.groupingBy(g -> g.getParentGroup().getId()));
+                .collect(Collectors.groupingBy(g -> g.getParentGroup().getId()));
 
         // 1. Build Descendants Tree (Children)
         GroupDTO resultDTO = buildDescendantsTree(requestedNode, childrenMap);
@@ -101,8 +105,8 @@ public class GroupService {
         return resultDTO;
     }
 
-    private GroupDTO buildDescendantsTree(Group current, java.util.Map<Long, java.util.List<Group>> childrenMap) {
-        var myChildren = childrenMap.getOrDefault(current.getId(), java.util.Collections.emptyList());
+    private GroupDTO buildDescendantsTree(Group current, Map<Long, List<Group>> childrenMap) {
+        var myChildren = childrenMap.getOrDefault(current.getId(), Collections.emptyList());
 
         var childrenDTOs = myChildren.stream()
                 .map(child -> buildDescendantsTree(child, childrenMap))
@@ -111,7 +115,7 @@ public class GroupService {
         return GroupDTO.from(current, childrenDTOs.isEmpty() ? null : childrenDTOs, null);
     }
 
-    private GroupDTO attachAncestors(GroupDTO currentDTO, Group currentNode, java.util.Map<Long, Group> groupMap) {
+    private GroupDTO attachAncestors(GroupDTO currentDTO, Group currentNode, Map<Long, Group> groupMap) {
         if (currentNode.getParentGroup() == null) {
             return currentDTO;
         }

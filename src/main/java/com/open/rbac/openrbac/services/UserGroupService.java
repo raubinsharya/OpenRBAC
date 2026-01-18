@@ -17,7 +17,7 @@ import com.open.rbac.openrbac.requests.AddGroupMembersRequest;
 import jakarta.persistence.EntityNotFoundException;
 import com.open.rbac.openrbac.models.Group;
 import com.open.rbac.openrbac.models.User;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 

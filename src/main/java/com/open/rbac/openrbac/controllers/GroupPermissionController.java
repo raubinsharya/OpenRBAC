@@ -27,7 +27,7 @@ public class GroupPermissionController {
             @PathVariable Long groupId,
             @Valid @RequestBody AddGroupPermissionsRequest request) {
         groupPermissionService.addPermissionsToGroup(realmId, groupId, request);
-        return ResponseEntity.ok(java.util.Map.of("message", "Permissions added successfully"));
+        return ResponseEntity.ok(Map.of("message", "Permissions added successfully"));
     }
 
     @DeleteMapping
@@ -36,7 +36,7 @@ public class GroupPermissionController {
             @PathVariable Long groupId,
             @Valid @RequestBody RemoveGroupPermissionsRequest request) {
         groupPermissionService.removePermissionsFromGroup(realmId, groupId, request);
-        return ResponseEntity.ok(java.util.Map.of("message", "Permissions removed successfully"));
+        return ResponseEntity.ok(Map.of("message", "Permissions removed successfully"));
     }
 
     @GetMapping

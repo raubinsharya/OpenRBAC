@@ -26,6 +26,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -186,7 +187,7 @@ public class GroupPermissionService {
                 if (path == null || path.equals("/") || path.isEmpty()) {
                         return List.of();
                 }
-                return java.util.Arrays.stream(path.split("/"))
+                return Arrays.stream(path.split("/"))
                                 .filter(s -> !s.isEmpty())
                                 .map(Long::valueOf)
                                 .toList();

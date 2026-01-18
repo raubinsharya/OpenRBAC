@@ -10,6 +10,7 @@ import com.open.rbac.openrbac.repositories.RoleRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requests.AddRolePermissionsRequest;
 import com.open.rbac.openrbac.requests.RemoveRolePermissionsRequest;
+import com.open.rbac.openrbac.requestParams.CheckPermissionRequest;
 import com.open.rbac.openrbac.requestParams.RolePermissionFilterRequest;
 import com.open.rbac.openrbac.dtos.RolePermissionDTO;
 import com.open.rbac.openrbac.models.RolePermission;
@@ -19,6 +20,7 @@ import com.open.rbac.openrbac.specifications.RoleSpecification;
 import com.open.rbac.openrbac.utils.SecurityUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -122,7 +124,7 @@ public class RolePermissionService {
 
     @Transactional(readOnly = true)
     public boolean checkRolePermission(Long realmId, Long roleId,
-            com.open.rbac.openrbac.requestParams.CheckPermissionRequest request) {
+            CheckPermissionRequest request) {
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
@@ -136,7 +138,7 @@ public class RolePermissionService {
 
     @Transactional(readOnly = true)
     public PagedResponse<String> getRoleResources(Long realmId, Long roleId,
-            org.springframework.data.domain.Pageable pageable) {
+            Pageable pageable) {
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
@@ -146,7 +148,7 @@ public class RolePermissionService {
 
     @Transactional(readOnly = true)
     public PagedResponse<String> getRoleActions(Long realmId, Long roleId,
-            org.springframework.data.domain.Pageable pageable) {
+            Pageable pageable) {
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }

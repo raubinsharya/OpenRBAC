@@ -11,6 +11,7 @@ import com.open.rbac.openrbac.repositories.UserPermissionRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requests.AddUserPermissionsRequest;
 import com.open.rbac.openrbac.requests.RemoveUserPermissionsRequest;
+import com.open.rbac.openrbac.requestParams.CheckPermissionRequest;
 import com.open.rbac.openrbac.requestParams.UserPermissionFilterRequest;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.models.UserEffectivePermission;
@@ -20,6 +21,7 @@ import com.open.rbac.openrbac.specifications.UserSpecification;
 import com.open.rbac.openrbac.utils.SecurityUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -146,7 +148,7 @@ public class UserPermissionService {
 
         @Transactional(readOnly = true)
         public boolean checkPermission(Long realmId, Long userId,
-                        com.open.rbac.openrbac.requestParams.CheckPermissionRequest request) {
+                        CheckPermissionRequest request) {
                 if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
                         throw new EntityNotFoundException("User not found");
                 }
@@ -160,7 +162,7 @@ public class UserPermissionService {
 
         @Transactional(readOnly = true)
         public PagedResponse<String> getEffectiveUserResources(Long realmId, Long userId,
-                        org.springframework.data.domain.Pageable pageable, String assignmentType) {
+                        Pageable pageable, String assignmentType) {
                 if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
                         throw new EntityNotFoundException("User not found");
                 }
@@ -170,7 +172,7 @@ public class UserPermissionService {
 
         @Transactional(readOnly = true)
         public PagedResponse<String> getEffectiveUserActions(Long realmId, Long userId,
-                        org.springframework.data.domain.Pageable pageable, String assignmentType) {
+                        Pageable pageable, String assignmentType) {
                 if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
                         throw new EntityNotFoundException("User not found");
                 }
