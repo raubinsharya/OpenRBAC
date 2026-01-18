@@ -19,11 +19,6 @@ public class GroupEffectivePermissionSpecification {
             if (groupId == null || realmId == null) {
                 return null;
             }
-            if (query != null && query.getResultType() != Long.class && query.getResultType() != long.class) {
-                root.fetch("group", JoinType.INNER);
-                root.fetch("permission", JoinType.INNER);
-                root.fetch("assignedBy", JoinType.LEFT);
-            }
 
             var groupJoin = root.join("group", JoinType.INNER);
             var groupRealmJoin = groupJoin.join("realm", JoinType.INNER);
@@ -65,6 +60,22 @@ public class GroupEffectivePermissionSpecification {
             if (name == null || name.isEmpty())
                 return null;
             return cb.like(cb.lower(root.get("permission").get("name")), "%" + name.toLowerCase() + "%");
+        };
+    }
+
+    public static Specification<GroupEffectivePermission> hasResource(String resource) {
+        return (root, query, cb) -> {
+            if (resource == null || resource.isEmpty())
+                return null;
+            return cb.equal(cb.lower(root.get("permission").get("resource")), resource.toLowerCase());
+        };
+    }
+
+    public static Specification<GroupEffectivePermission> hasAction(String action) {
+        return (root, query, cb) -> {
+            if (action == null || action.isEmpty())
+                return null;
+            return cb.equal(cb.lower(root.get("permission").get("action")), action.toLowerCase());
         };
     }
 

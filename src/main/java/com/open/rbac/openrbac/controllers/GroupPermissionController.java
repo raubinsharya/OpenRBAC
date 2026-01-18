@@ -52,8 +52,11 @@ public class GroupPermissionController {
             @PathVariable Long realmId,
             @PathVariable Long groupId,
             @RequestParam(required = false) Long permissionId,
-            @RequestParam(required = false) String permissionName) {
-        boolean hasPermission = groupPermissionService.hasPermission(realmId, groupId, permissionId, permissionName);
+            @RequestParam(required = false) String permissionName,
+            @RequestParam(required = false) String resource,
+            @RequestParam(required = false) String action) {
+        boolean hasPermission = groupPermissionService.hasPermission(realmId, groupId, permissionId, permissionName,
+                resource, action);
         return ResponseEntity.ok(Map.of("hasPermission", hasPermission));
     }
 }

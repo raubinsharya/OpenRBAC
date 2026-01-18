@@ -144,9 +144,12 @@ public class GroupPermissionService {
     }
 
     @Transactional(readOnly = true)
-    public boolean hasPermission(Long realmId, Long groupId, Long permissionId, String permissionName) {
-        if (permissionId == null && (permissionName == null || permissionName.isEmpty())) {
-            throw new IllegalArgumentException("Either permissionId or permissionName must be provided");
+    public boolean hasPermission(Long realmId, Long groupId, Long permissionId, String permissionName, String resource,
+            String action) {
+        if (permissionId == null && (permissionName == null || permissionName.isEmpty())
+                && (resource == null || resource.isEmpty()) && (action == null || action.isEmpty())) {
+            throw new IllegalArgumentException(
+                    "Either permissionId, permissionName, or resource/action must be provided");
         }
 
         boolean groupExists = groupRepository.exists(Specification.allOf(
@@ -168,6 +171,8 @@ public class GroupPermissionService {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("permission").get("id"), permissionId));
         } else {
             spec = spec.and(GroupEffectivePermissionSpecification.hasPermissionName(permissionName));
+            spec = spec.and(GroupEffectivePermissionSpecification.hasResource(resource));
+            spec = spec.and(GroupEffectivePermissionSpecification.hasAction(action));
         }
 
         return groupEffectivePermissionRepository.exists(spec);
