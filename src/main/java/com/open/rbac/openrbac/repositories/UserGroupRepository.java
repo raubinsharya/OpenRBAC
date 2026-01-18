@@ -38,4 +38,6 @@ public interface UserGroupRepository extends JpaRepository<UserGroup, Long>, Jpa
                         @Param("expiryDate") LocalDateTime expiryDate);
 
         List<UserGroup> findAllByIdIn(Set<Long> ids);
+
+        List<UserGroup> findByUserIdAndGroup_Realm_Id(Long userId, Long realmId);
 }

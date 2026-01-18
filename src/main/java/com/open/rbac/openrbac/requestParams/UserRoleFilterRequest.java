@@ -22,6 +22,7 @@ public class UserRoleFilterRequest extends BaseFilter {
     private String assignedBy;
     private EntityStatus userStatus;
     private Boolean isActive;
+    private String assignmentType;
 
     @FlexibleDate(strategy = DateStrategy.END_OF_DAY)
     private LocalDateTime assignedAtBefore;
