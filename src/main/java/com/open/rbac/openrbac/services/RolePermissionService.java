@@ -74,6 +74,7 @@ public class RolePermissionService {
                 .role(role)
                 .permission(p)
                 .assignedBy(assignedBy)
+                .expiryDate(request.getExpiryDate())
                 .build()).toList();
         rolePermissionRepository.saveAll(rolePermissions);
 
@@ -112,17 +113,44 @@ public class RolePermissionService {
                 RolePermissionSpecification.assignedBy(filter.getAssignedBy()),
                 RolePermissionSpecification.hasRoleStatus(filter.getRoleStatus()),
                 RolePermissionSpecification.assignedAtBefore(filter.getAssignedAtBefore()),
-                RolePermissionSpecification.assignedAtAfter(filter.getAssignedAtAfter()));
+                RolePermissionSpecification.assignedAtAfter(filter.getAssignedAtAfter()),
+                RolePermissionSpecification.isNotExpired());
 
         return PagedResponse.fromPage(rolePermissionRepository.findAll(spec, filter.toPageable()),
                 RolePermissionDTO::from);
     }
 
     @Transactional(readOnly = true)
-    public boolean checkRolePermission(Long realmId, Long roleId, String resource, String action) {
+    public boolean checkRolePermission(Long realmId, Long roleId,
+            com.open.rbac.openrbac.requestParams.CheckPermissionRequest request) {
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
-        return rolePermissionRepository.checkPermission(realmId, roleId, resource, action);
+        if (request.getResource() == null && request.getAction() == null
+                && request.getPermissionName() == null) {
+            return false;
+        }
+        return rolePermissionRepository.checkPermission(realmId, roleId, request.getResource(), request.getAction(),
+                request.getPermissionName());
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<String> getRoleResources(Long realmId, Long roleId,
+            org.springframework.data.domain.Pageable pageable) {
+        if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
+            throw new EntityNotFoundException("Role not found");
+        }
+        return PagedResponse.fromPage(rolePermissionRepository.findDistinctResourcesByRole(realmId, roleId, pageable),
+                s -> s);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<String> getRoleActions(Long realmId, Long roleId,
+            org.springframework.data.domain.Pageable pageable) {
+        if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
+            throw new EntityNotFoundException("Role not found");
+        }
+        return PagedResponse.fromPage(rolePermissionRepository.findDistinctActionsByRole(realmId, roleId, pageable),
+                s -> s);
     }
 }

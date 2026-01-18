@@ -30,9 +30,8 @@ public class RolePermissionController {
     public ResponseEntity<?> checkPermission(
             @PathVariable Long realmId,
             @PathVariable Long id,
-            @RequestParam String resource,
-            @RequestParam String action) {
-        boolean hasPermission = rolePermissionService.checkRolePermission(realmId, id, resource, action);
+            @ModelAttribute com.open.rbac.openrbac.requestParams.CheckPermissionRequest request) {
+        boolean hasPermission = rolePermissionService.checkRolePermission(realmId, id, request);
         return ResponseEntity.ok(Map.of("hasPermission", hasPermission));
     }
 
@@ -52,5 +51,21 @@ public class RolePermissionController {
             @RequestBody @Valid RemoveRolePermissionsRequest request) {
         rolePermissionService.removePermissionsFromRole(realmId, id, request);
         return ResponseEntity.ok(Map.of("message", "Permissions removed successfully"));
+    }
+
+    @GetMapping("/resources")
+    public ResponseEntity<?> getRoleResources(
+            @PathVariable Long realmId,
+            @PathVariable Long id,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(rolePermissionService.getRoleResources(realmId, id, pageable));
+    }
+
+    @GetMapping("/actions")
+    public ResponseEntity<?> getRoleActions(
+            @PathVariable Long realmId,
+            @PathVariable Long id,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(rolePermissionService.getRoleActions(realmId, id, pageable));
     }
 }

@@ -15,7 +15,7 @@ import java.util.Set;
 @Repository
 public interface PermissionRepository extends JpaRepository<Permission, Long>, JpaSpecificationExecutor<Permission> {
 
-    List<Permission> findAllByIdInAndRealm_Id(Set<Long> ids, Long realmId);
+    List<Permission> findAllByIdInAndRealm_Id(java.util.Collection<Long> ids, Long realmId);
 
     @Query("SELECT rp.permission FROM Role r JOIN r.rolePermissions rp WHERE r.id = :roleId AND r.realm.id = :realmId")
     Page<Permission> findByRoleIdAndRealmId(@Param("roleId") Long roleId, @Param("realmId") Long realmId,

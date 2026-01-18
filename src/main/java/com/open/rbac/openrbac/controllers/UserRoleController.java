@@ -26,6 +26,16 @@ public class UserRoleController {
         return ResponseEntity.ok(userRoleService.getUserRoles(realmId, userId, filter));
     }
 
+    @GetMapping("/check")
+    public ResponseEntity<Map<String, Boolean>> checkUserRole(
+            @PathVariable Long realmId,
+            @PathVariable Long userId,
+            @RequestParam(required = false) Long roleId,
+            @RequestParam(required = false) String roleName) {
+        boolean hasRole = userRoleService.hasRole(realmId, userId, roleId, roleName);
+        return ResponseEntity.ok(Map.of("hasRole", hasRole));
+    }
+
     @PostMapping
     public ResponseEntity<?> addRoles(
             @PathVariable Long realmId,

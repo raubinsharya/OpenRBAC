@@ -39,6 +39,4 @@ public class RoleController {
             @RequestBody Role role) {
         return ResponseEntity.ok(roleService.createRole(realmId, role));
     }
-
-
 }

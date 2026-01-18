@@ -19,6 +19,10 @@ public interface GroupRepository extends JpaRepository<Group, Long>, JpaSpecific
 
   boolean existsByIdAndRealm_Id(Long id, Long realmId);
 
+  List<Group> findByRealm_IdAndPathStartingWith(Long realmId, String pathPrefix);
+
+  List<Group> findByRealm_IdAndPathStartingWithAndLevelLessThanEqual(Long realmId, String pathPrefix, Integer maxLevel);
+
   @Query(value = """
       SELECT
                     g.id,

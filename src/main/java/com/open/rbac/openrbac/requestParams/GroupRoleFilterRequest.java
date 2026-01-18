@@ -1,7 +1,7 @@
 package com.open.rbac.openrbac.requestParams;
 
-import com.open.rbac.openrbac.annotations.DateStrategy;
 import com.open.rbac.openrbac.annotations.FlexibleDate;
+import com.open.rbac.openrbac.annotations.DateStrategy;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -16,13 +16,13 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @SuperBuilder
 @EqualsAndHashCode(callSuper = true)
-public class UserRoleFilterRequest extends BaseFilter {
+public class GroupRoleFilterRequest extends BaseFilter {
     private String roleName;
     private EntityStatus roleStatus;
     private String assignedBy;
-    private EntityStatus userStatus;
+    private EntityStatus groupStatus;
     private Boolean isActive;
-    private String assignmentType;
+    private Boolean isInherited;
 
     @FlexibleDate(strategy = DateStrategy.END_OF_DAY)
     private LocalDateTime assignedAtBefore;

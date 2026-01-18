@@ -26,6 +26,15 @@ public class UserPermissionController {
         return ResponseEntity.ok(userPermissionService.getUserPermissions(realmId, userId, filter));
     }
 
+    @GetMapping("/check")
+    public ResponseEntity<?> checkPermission(
+            @PathVariable Long realmId,
+            @PathVariable Long userId,
+            @ModelAttribute com.open.rbac.openrbac.requestParams.CheckPermissionRequest request) {
+        boolean hasPermission = userPermissionService.checkPermission(realmId, userId, request);
+        return ResponseEntity.ok(Map.of("hasPermission", hasPermission));
+    }
+
     @PostMapping
     public ResponseEntity<?> addPermissions(
             @PathVariable Long realmId,
@@ -42,5 +51,23 @@ public class UserPermissionController {
             @RequestBody @Valid RemoveUserPermissionsRequest request) {
         userPermissionService.removePermissionsFromUser(realmId, userId, request);
         return ResponseEntity.ok(Map.of("message", "Permissions removed successfully"));
+    }
+
+    @GetMapping("/resources")
+    public ResponseEntity<?> getEffectiveUserResources(
+            @PathVariable Long realmId,
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "false") boolean fromRole,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(userPermissionService.getEffectiveUserResources(realmId, userId, pageable, fromRole));
+    }
+
+    @GetMapping("/actions")
+    public ResponseEntity<?> getEffectiveUserActions(
+            @PathVariable Long realmId,
+            @PathVariable Long userId,
+            @RequestParam(defaultValue = "false") boolean fromRole,
+            org.springframework.data.domain.Pageable pageable) {
+        return ResponseEntity.ok(userPermissionService.getEffectiveUserActions(realmId, userId, pageable, fromRole));
     }
 }

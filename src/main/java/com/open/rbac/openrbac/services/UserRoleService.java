@@ -5,14 +5,16 @@ import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.dtos.UserRoleDTO;
 import com.open.rbac.openrbac.models.Role;
 import com.open.rbac.openrbac.models.User;
+import com.open.rbac.openrbac.models.UserEffectiveRole;
 import com.open.rbac.openrbac.models.UserRole;
 import com.open.rbac.openrbac.repositories.RoleRepository;
+import com.open.rbac.openrbac.repositories.UserEffectiveRoleRepository;
 import com.open.rbac.openrbac.repositories.UserRoleRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requests.AddUserRolesRequest;
 import com.open.rbac.openrbac.requests.RemoveUserRolesRequest;
 import com.open.rbac.openrbac.requestParams.UserRoleFilterRequest;
-import com.open.rbac.openrbac.specifications.UserRoleSpecification;
+import com.open.rbac.openrbac.specifications.UserEffectiveRoleSpecification;
 import com.open.rbac.openrbac.specifications.UserSpecification;
 import com.open.rbac.openrbac.utils.SecurityUtils;
 import jakarta.persistence.EntityNotFoundException;
@@ -33,6 +35,7 @@ public class UserRoleService {
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final UserRoleRepository userRoleRepository;
+    private final UserEffectiveRoleRepository userEffectiveRoleRepository;
 
     @Transactional
     @RequireAnyRole(value = { "realm-admin", "group-admin" })
@@ -99,24 +102,55 @@ public class UserRoleService {
 
     @Transactional(readOnly = true)
     public PagedResponse<UserRoleDTO> getUserRoles(Long realmId, Long userId, UserRoleFilterRequest filter) {
+        // 1. Check User Existence
         boolean userExists = userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
         if (!userExists) {
             throw new EntityNotFoundException("User not found");
         }
 
-        Specification<UserRole> spec = Specification.allOf(
-                UserRoleSpecification.ofUser(userId, realmId),
-                UserRoleSpecification.isNotExpired(),
-                UserRoleSpecification.hasRoleName(filter.getRoleName()),
-                UserRoleSpecification.hasRoleStatus(filter.getRoleStatus()),
-                UserRoleSpecification.hasUserStatus(filter.getUserStatus()),
-                UserRoleSpecification.assignedBy(filter.getAssignedBy()),
-                UserRoleSpecification.isActive(filter.getIsActive()),
-                UserRoleSpecification.assignedAtBefore(filter.getAssignedAtBefore()),
-                UserRoleSpecification.assignedAtAfter(filter.getAssignedAtAfter()),
-                UserRoleSpecification.expiryDateBefore(filter.getExpiryDateBefore()),
-                UserRoleSpecification.expiryDateAfter(filter.getExpiryDateAfter()));
+        // 2. Fetch Effective User Roles (Direct + Group)
+        Specification<UserEffectiveRole> spec = Specification.allOf(
+                UserEffectiveRoleSpecification.ofUser(userId, realmId),
+                UserEffectiveRoleSpecification.isNotExpired(),
+                UserEffectiveRoleSpecification.hasRoleName(filter.getRoleName()),
+                UserEffectiveRoleSpecification.hasRoleStatus(filter.getRoleStatus()),
+                UserEffectiveRoleSpecification.hasUserStatus(filter.getUserStatus()),
+                UserEffectiveRoleSpecification.assignedBy(filter.getAssignedBy()),
+                UserEffectiveRoleSpecification.isActive(filter.getIsActive()),
+                UserEffectiveRoleSpecification.assignedAtBefore(filter.getAssignedAtBefore()),
+                UserEffectiveRoleSpecification.assignedAtAfter(filter.getAssignedAtAfter()),
+                UserEffectiveRoleSpecification.expiryDateBefore(filter.getExpiryDateBefore()),
+                UserEffectiveRoleSpecification.expiryDateAfter(filter.getExpiryDateAfter()),
+                UserEffectiveRoleSpecification.assignmentType(filter.getAssignmentType()));
 
-        return PagedResponse.fromPage(userRoleRepository.findAll(spec, filter.toPageable()), UserRoleDTO::from);
+        return PagedResponse.fromPage(userEffectiveRoleRepository.findAll(spec, filter.toPageable()),
+                UserRoleDTO::from);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasRole(Long realmId, Long userId, Long roleId, String roleName) {
+        if (roleId == null && (roleName == null || roleName.isEmpty())) {
+            throw new IllegalArgumentException("Either roleId or roleName must be provided");
+        }
+
+        // Verify user exists
+        boolean userExists = userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
+        if (!userExists) {
+            throw new EntityNotFoundException("User not found");
+        }
+
+        // Check against Effective Roles
+        Specification<UserEffectiveRole> spec = Specification.allOf(
+                UserEffectiveRoleSpecification.ofUser(userId, realmId),
+                UserEffectiveRoleSpecification.isNotExpired(),
+                UserEffectiveRoleSpecification.isActive(true));
+
+        if (roleId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("role").get("id"), roleId));
+        } else {
+            spec = spec.and(UserEffectiveRoleSpecification.hasRoleName(roleName));
+        }
+
+        return userEffectiveRoleRepository.exists(spec);
     }
 }
