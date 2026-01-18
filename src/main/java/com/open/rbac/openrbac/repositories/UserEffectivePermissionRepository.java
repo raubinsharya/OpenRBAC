@@ -40,12 +40,12 @@ public interface UserEffectivePermissionRepository
         AND uep.permission.realm.id = :realmId
         AND (uep.isActive IS NULL OR uep.isActive = true)
         AND (uep.expiryDate IS NULL OR uep.expiryDate > CURRENT_TIMESTAMP)
-        AND (:fromRole = true OR uep.assignmentType = 'DIRECT')
+        AND (:assignmentType IS NULL OR uep.assignmentType = UPPER(CAST(:assignmentType AS string)))
       """)
   org.springframework.data.domain.Page<String> findDistinctResourcesByUser(
       @org.springframework.data.repository.query.Param("realmId") Long realmId,
       @org.springframework.data.repository.query.Param("userId") Long userId,
-      @org.springframework.data.repository.query.Param("fromRole") boolean fromRole,
+      @org.springframework.data.repository.query.Param("assignmentType") String assignmentType,
       org.springframework.data.domain.Pageable pageable);
 
   @org.springframework.data.jpa.repository.Query("""
@@ -56,11 +56,11 @@ public interface UserEffectivePermissionRepository
         AND uep.permission.realm.id = :realmId
         AND (uep.isActive IS NULL OR uep.isActive = true)
         AND (uep.expiryDate IS NULL OR uep.expiryDate > CURRENT_TIMESTAMP)
-        AND (:fromRole = true OR uep.assignmentType = 'DIRECT')
+        AND (:assignmentType IS NULL OR uep.assignmentType = UPPER(CAST(:assignmentType AS string)))
       """)
   org.springframework.data.domain.Page<String> findDistinctActionsByUser(
       @org.springframework.data.repository.query.Param("realmId") Long realmId,
       @org.springframework.data.repository.query.Param("userId") Long userId,
-      @org.springframework.data.repository.query.Param("fromRole") boolean fromRole,
+      @org.springframework.data.repository.query.Param("assignmentType") String assignmentType,
       org.springframework.data.domain.Pageable pageable);
 }

@@ -160,21 +160,21 @@ public class UserPermissionService {
 
         @Transactional(readOnly = true)
         public PagedResponse<String> getEffectiveUserResources(Long realmId, Long userId,
-                        org.springframework.data.domain.Pageable pageable, boolean fromRole) {
+                        org.springframework.data.domain.Pageable pageable, String assignmentType) {
                 if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
                         throw new EntityNotFoundException("User not found");
                 }
                 return PagedResponse.fromPage(userEffectivePermissionRepository.findDistinctResourcesByUser(realmId,
-                                userId, fromRole, pageable), s -> s);
+                                userId, assignmentType, pageable), s -> s);
         }
 
         @Transactional(readOnly = true)
         public PagedResponse<String> getEffectiveUserActions(Long realmId, Long userId,
-                        org.springframework.data.domain.Pageable pageable, boolean fromRole) {
+                        org.springframework.data.domain.Pageable pageable, String assignmentType) {
                 if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
                         throw new EntityNotFoundException("User not found");
                 }
                 return PagedResponse.fromPage(userEffectivePermissionRepository.findDistinctActionsByUser(realmId,
-                                userId, fromRole, pageable), s -> s);
+                                userId, assignmentType, pageable), s -> s);
         }
 }

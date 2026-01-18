@@ -174,16 +174,11 @@ public class GroupEffectivePermissionSpecification {
         };
     }
 
-    public static Specification<GroupEffectivePermission> fromRole(Boolean fromRole) {
+    public static Specification<GroupEffectivePermission> assignmentType(String assignmentType) {
         return (root, query, cb) -> {
-            // If fromRole is true, we include role-based permissions (show all: DIRECT +
-            // ROLE)
-            // If fromRole is false or null, we only show DIRECT permissions (default
-            // behavior)
-            if (Boolean.TRUE.equals(fromRole)) {
+            if (assignmentType == null || assignmentType.isEmpty())
                 return null;
-            }
-            return cb.equal(root.get("assignmentType"), "DIRECT");
+            return cb.equal(root.get("assignmentType"), assignmentType.toUpperCase());
         };
     }
 }

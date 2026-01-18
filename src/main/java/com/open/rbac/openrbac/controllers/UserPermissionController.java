@@ -57,17 +57,19 @@ public class UserPermissionController {
     public ResponseEntity<?> getEffectiveUserResources(
             @PathVariable Long realmId,
             @PathVariable Long userId,
-            @RequestParam(defaultValue = "false") boolean fromRole,
+            @RequestParam(required = false) String assignmentType,
             org.springframework.data.domain.Pageable pageable) {
-        return ResponseEntity.ok(userPermissionService.getEffectiveUserResources(realmId, userId, pageable, fromRole));
+        return ResponseEntity
+                .ok(userPermissionService.getEffectiveUserResources(realmId, userId, pageable, assignmentType));
     }
 
     @GetMapping("/actions")
     public ResponseEntity<?> getEffectiveUserActions(
             @PathVariable Long realmId,
             @PathVariable Long userId,
-            @RequestParam(defaultValue = "false") boolean fromRole,
+            @RequestParam(required = false) String assignmentType,
             org.springframework.data.domain.Pageable pageable) {
-        return ResponseEntity.ok(userPermissionService.getEffectiveUserActions(realmId, userId, pageable, fromRole));
+        return ResponseEntity
+                .ok(userPermissionService.getEffectiveUserActions(realmId, userId, pageable, assignmentType));
     }
 }
