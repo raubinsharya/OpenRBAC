@@ -40,4 +40,6 @@ public class UserPermissionFilterRequest extends BaseFilter {
 
     @FlexibleDate(strategy = DateStrategy.START_OF_DAY)
     private LocalDateTime expiryDateAfter;
+
+    private String assignmentType;
 }

@@ -149,14 +149,11 @@ public class UserEffectivePermissionSpecification {
         };
     }
 
-    public static Specification<UserEffectivePermission> fromRole(boolean includeRoleParams) {
+    public static Specification<UserEffectivePermission> assignmentType(String assignmentType) {
         return (root, query, cb) -> {
-            // If includeRoleParams is TRUE, we show everything (Direct + Role).
-            // If includeRoleParams is FALSE, we ONLY show DIRECT.
-            if (includeRoleParams) {
-                return null; // No filtering, show all
-            }
-            return cb.equal(root.get("assignmentType"), "DIRECT");
+            if (assignmentType == null || assignmentType.isEmpty())
+                return null;
+            return cb.equal(root.get("assignmentType"), assignmentType.toUpperCase());
         };
     }
 }

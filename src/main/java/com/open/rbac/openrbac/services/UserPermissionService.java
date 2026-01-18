@@ -137,7 +137,7 @@ public class UserPermissionService {
                                 UserEffectivePermissionSpecification
                                                 .expiryDateAfter(filter.getExpiryDateAfter()),
                                 UserEffectivePermissionSpecification
-                                                .fromRole(filter.isFromRole()),
+                                                .assignmentType(filter.getAssignmentType()),
                                 BaseSpecification.withBaseFilters(filter));
 
                 return PagedResponse.fromPage(userEffectivePermissionRepository.findAll(spec, filter.toPageable()),
