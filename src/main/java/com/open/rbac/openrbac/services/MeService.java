@@ -68,6 +68,18 @@ public class MeService {
 
         }
 
+        public boolean hasAnyRole(String username, List<String> roleNames) {
+                User user = userRepository.findByUsername(username)
+                                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                Long realmId = user.getRealm().getId();
+                Specification<UserEffectiveRole> spec = Specification.allOf(
+                                UserEffectiveRoleSpecification.ofUser(user.getId(), realmId),
+                                UserEffectiveRoleSpecification.isNotExpired(),
+                                UserEffectiveRoleSpecification.isActive(true),
+                                UserEffectiveRoleSpecification.hasRoleNameIn(roleNames));
+                return userEffectiveRoleRepository.exists(spec);
+        }
+
         public List<PermissionDTO> getMePermissions(String userName) {
                 User user = userRepository.findByUsername(userName)
                                 .orElseThrow(() -> new EntityNotFoundException("User not found"));

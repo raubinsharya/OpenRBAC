@@ -15,8 +15,8 @@ public class UserEffectiveRoleSpecification {
                 return null;
             }
 
-            // Fetch Optimization
-            if (Long.class != query.getResultType()) {
+            // Fetch Optimization ONLY for entity queries, NOT for count/exists
+            if (query.getResultType().equals(UserEffectiveRole.class)) {
                 root.fetch("role", JoinType.LEFT);
                 root.fetch("user", JoinType.LEFT);
                 root.fetch("sourceGroup", JoinType.LEFT);
@@ -34,6 +34,14 @@ public class UserEffectiveRoleSpecification {
             if (roleName == null || roleName.isEmpty())
                 return null;
             return cb.like(cb.lower(root.get("role").get("name")), "%" + roleName.toLowerCase() + "%");
+        };
+    }
+
+    public static Specification<UserEffectiveRole> hasRoleNameIn(java.util.Collection<String> roleNames) {
+        return (root, query, cb) -> {
+            if (roleNames == null || roleNames.isEmpty())
+                return null;
+            return root.get("role").get("name").in(roleNames);
         };
     }
 
