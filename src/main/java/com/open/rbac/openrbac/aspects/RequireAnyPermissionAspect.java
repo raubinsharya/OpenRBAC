@@ -1,7 +1,6 @@
 package com.open.rbac.openrbac.aspects;
 
 import com.open.rbac.openrbac.annotations.RequireAnyPermission;
-import com.open.rbac.openrbac.dtos.PermissionDTO;
 import com.open.rbac.openrbac.services.MeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Aspect
 @Component
@@ -27,7 +24,8 @@ public class RequireAnyPermissionAspect {
     private final MeService meService;
 
     @Around("@annotation(requireAnyPermission)")
-    public Object requireAnyPermission(ProceedingJoinPoint joinPoint, RequireAnyPermission requireAnyPermission) throws Throwable {
+    public Object requireAnyPermission(ProceedingJoinPoint joinPoint, RequireAnyPermission requireAnyPermission)
+            throws Throwable {
         // 1. Authentication validation
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
@@ -51,39 +49,22 @@ public class RequireAnyPermissionAspect {
             return joinPoint.proceed();
         }
 
-        log.info("Checking ANY permission for user: {} against required permissions: {}", username, Arrays.toString(requiredPermissions));
+        log.info("Checking ANY permission for user: {} against required permissions: {}", username,
+                Arrays.toString(requiredPermissions));
 
-        // 4. Get user permissions (all permissions, not paginated)
-        List<PermissionDTO> userPermissions;
+        // 4. Check if user has ANY required permission
         try {
-            userPermissions = meService.getMePermissions(username);
+            List<String> requiredPermissionsList = Arrays.asList(requiredPermissions);
+            boolean hasRequiredPermission = meService.hasAnyPermission(username, requiredPermissionsList);
+
+            if (!hasRequiredPermission) {
+                log.info("Access denied: User '{}' does not have any of the required permissions: {}",
+                        username, Arrays.toString(requiredPermissions));
+                throw new AccessDeniedException(requireAnyPermission.message());
+            }
         } catch (Exception e) {
-            log.error("Failed to retrieve permissions for user: {}", username, e);
-            throw new AccessDeniedException("Failed to retrieve user permissions");
-        }
-
-        if (userPermissions == null || userPermissions.isEmpty()) {
-            log.info("Access denied: User '{}' has no permissions assigned", username);
-            throw new AccessDeniedException(requireAnyPermission.message());
-        }
-
-        // 5. Parse required permissions and check if user has any (OR logic)
-        Set<String> userPermissionStrings = userPermissions.stream()
-                .filter(p -> p.resource() != null && p.action() != null)
-                .map(p -> p.resource() + ":" + p.action())
-                .collect(Collectors.toSet());
-
-        Set<String> requiredPermissionSet = Arrays.stream(requiredPermissions)
-                .filter(perm -> perm != null && !perm.trim().isEmpty())
-                .collect(Collectors.toSet());
-
-        boolean hasAnyRequiredPermission = requiredPermissionSet.stream()
-                .anyMatch(userPermissionStrings::contains);
-
-        if (!hasAnyRequiredPermission) {
-            log.info("Access denied: User '{}' with permissions {} does not have any required permissions: {}", 
-                    username, userPermissionStrings, requiredPermissionSet);
-            throw new AccessDeniedException(requireAnyPermission.message());
+            log.error("Failed to check permissions for user: {}", username, e);
+            throw new AccessDeniedException("Failed to verify user permissions");
         }
 
         log.info("Access granted: User '{}' has required permission(s)", username);

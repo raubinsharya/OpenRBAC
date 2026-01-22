@@ -1,7 +1,6 @@
 package com.open.rbac.openrbac.aspects;
 
 import com.open.rbac.openrbac.annotations.RequireAllRoles;
-import com.open.rbac.openrbac.dtos.RoleDTO;
 import com.open.rbac.openrbac.services.MeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Aspect
 @Component
@@ -51,42 +48,22 @@ public class RequireAllRolesAspect {
             return joinPoint.proceed();
         }
 
-        log.info("Checking ALL roles for user: {} against required roles: {}", username, Arrays.toString(requiredRoles));
+        log.info("Checking ALL roles for user: {} against required roles: {}", username,
+                Arrays.toString(requiredRoles));
 
-        // 4. Get user roles
-        List<RoleDTO> userRoles;
+        // 4. Check if user has ALL required roles
         try {
-            userRoles = meService.getMeRoles(username);
+            List<String> requiredRolesList = Arrays.asList(requiredRoles);
+            boolean hasAllRequiredRoles = meService.hasAllRoles(username, requiredRolesList);
+
+            if (!hasAllRequiredRoles) {
+                log.info("Access denied: User '{}' does not have ALL required roles: {}",
+                        username, Arrays.toString(requiredRoles));
+                throw new AccessDeniedException(requireAllRoles.message());
+            }
         } catch (Exception e) {
-            log.error("Failed to retrieve roles for user: {}", username, e);
-            throw new AccessDeniedException("Failed to retrieve user roles");
-        }
-
-        if (userRoles == null || userRoles.isEmpty()) {
-            log.info("Access denied: User '{}' has no roles assigned", username);
-            throw new AccessDeniedException(requireAllRoles.message());
-        }
-
-        // 5. Check if user has ALL required roles (AND logic)
-        Set<String> userRoleNames = userRoles.stream()
-                .map(RoleDTO::name)
-                .filter(name -> name != null && !name.trim().isEmpty())
-                .collect(Collectors.toSet());
-
-        Set<String> requiredRoleSet = Arrays.stream(requiredRoles)
-                .filter(role -> role != null && !role.trim().isEmpty())
-                .collect(Collectors.toSet());
-
-        boolean hasAllRequiredRoles = userRoleNames.containsAll(requiredRoleSet);
-
-        if (!hasAllRequiredRoles) {
-            Set<String> missingRoles = requiredRoleSet.stream()
-                    .filter(role -> !userRoleNames.contains(role))
-                    .collect(Collectors.toSet());
-            
-            log.info("Access denied: User '{}' with roles {} is missing required roles: {}", 
-                    username, userRoleNames, missingRoles);
-            throw new AccessDeniedException(requireAllRoles.message());
+            log.error("Failed to check roles for user: {}", username, e);
+            throw new AccessDeniedException("Failed to verify user roles");
         }
 
         log.info("Access granted: User '{}' has ALL required roles", username);

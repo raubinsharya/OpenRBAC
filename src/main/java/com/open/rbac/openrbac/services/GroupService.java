@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.services;
 
 import com.open.rbac.openrbac.requestParams.GroupFilterRequest;
+import com.open.rbac.openrbac.annotations.RequireAllRoles;
 import com.open.rbac.openrbac.annotations.RequireAnyRole;
 import com.open.rbac.openrbac.dtos.GroupDTO;
 import com.open.rbac.openrbac.dtos.PagedResponse;
@@ -38,7 +39,7 @@ public class GroupService {
         return PagedResponse.fromPage(groups, GroupDTO::from);
     }
 
-    @RequireAnyRole(value = { "realm-admin" })
+    @RequireAllRoles(value = { "realm-admin", "developer" })
     @Transactional(rollbackFor = Exception.class)
     public Group createGroup(long realmId, CreateGroupRequest createGroupRequest) {
         var realm = realmRepository.findById(realmId)

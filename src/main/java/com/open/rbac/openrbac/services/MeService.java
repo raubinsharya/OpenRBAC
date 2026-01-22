@@ -80,6 +80,93 @@ public class MeService {
                 return userEffectiveRoleRepository.exists(spec);
         }
 
+        public boolean hasAllRoles(String username, List<String> roleNames) {
+                User user = userRepository.findByUsername(username)
+                                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                Long realmId = user.getRealm().getId();
+                Specification<UserEffectiveRole> spec = Specification.allOf(
+                                UserEffectiveRoleSpecification.ofUser(user.getId(), realmId),
+                                UserEffectiveRoleSpecification.isNotExpired(),
+                                UserEffectiveRoleSpecification.isActive(true),
+                                UserEffectiveRoleSpecification.hasRoleNameIn(roleNames));
+                // For "All roles", the count of unique matching roles must equal the requested
+                // list size
+                // Note: accurate "hasAll" check usually requires checking count(distinct
+                // role_id)
+                // This is a simplified check that assumes unique role names in the input list
+
+                // Ideally we should group by role.name and count, but simple count might be
+                // strictly sufficient if roles are unique per user-effective-view which they
+                // might not be (inheritance)
+                // A better approach for ALL check via DB is: find roles WHERE name IN (...) ->
+                // get names -> compare sets in Java
+                // But to fully optimize avoiding fetching all roles, we can fetch ONLY the
+                // names
+                // For now, let's implement a "fetch only matching names" strategy for "ALL"
+                // checks to keep it robust and efficient.
+                List<UserEffectiveRole> matchingRoles = userEffectiveRoleRepository.findAll(spec);
+                long uniqueMatchingRoles = matchingRoles.stream()
+                                .map(r -> r.getRole().getName())
+                                .distinct()
+                                .count();
+                return uniqueMatchingRoles >= roleNames.size();
+        }
+
+        public boolean hasAnyPermission(String username, List<String> permissions) {
+                // Permissions are "resource:action" strings
+                User user = userRepository.findByUsername(username)
+                                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                Long realmId = user.getRealm().getId();
+
+                for (String permString : permissions) {
+                        String[] parts = permString.split(":");
+                        if (parts.length != 2)
+                                continue;
+                        String resource = parts[0];
+                        String action = parts[1];
+
+                        Specification<UserEffectivePermission> spec = Specification.allOf(
+                                        UserEffectivePermissionSpecification.ofUser(user.getId(), realmId),
+                                        UserEffectivePermissionSpecification.isNotExpired(),
+                                        UserEffectivePermissionSpecification.isActive(true),
+                                        UserEffectivePermissionSpecification.hasResource(resource),
+                                        UserEffectivePermissionSpecification.hasAction(action));
+                        if (userEffectivePermissionRepository.exists(spec)) {
+                                return true;
+                        }
+                }
+                return false;
+        }
+
+        public boolean hasAllPermissions(String username, List<String> permissions) {
+                User user = userRepository.findByUsername(username)
+                                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+                Long realmId = user.getRealm().getId();
+
+                // Using stream to check all, but could be slow if many permissions.
+                // However, usually required permissions are few (1-3).
+                for (String permString : permissions) {
+                        String[] parts = permString.split(":");
+                        if (parts.length != 2)
+                                return false;
+                        String resource = parts[0];
+                        String action = parts[1];
+
+                        Specification<UserEffectivePermission> spec = Specification.allOf(
+                                        UserEffectivePermissionSpecification.ofUser(user.getId(), realmId),
+                                        UserEffectivePermissionSpecification.isNotExpired(),
+                                        UserEffectivePermissionSpecification.isActive(true),
+                                        UserEffectivePermissionSpecification.hasResource(resource),
+                                        UserEffectivePermissionSpecification.hasAction(action));
+
+                        // If any permission is missing, return false
+                        if (!userEffectivePermissionRepository.exists(spec)) {
+                                return false;
+                        }
+                }
+                return true;
+        }
+
         public List<PermissionDTO> getMePermissions(String userName) {
                 User user = userRepository.findByUsername(userName)
                                 .orElseThrow(() -> new EntityNotFoundException("User not found"));

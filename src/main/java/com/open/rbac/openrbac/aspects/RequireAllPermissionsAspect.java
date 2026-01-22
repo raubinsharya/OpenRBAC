@@ -1,7 +1,6 @@
 package com.open.rbac.openrbac.aspects;
 
 import com.open.rbac.openrbac.annotations.RequireAllPermissions;
-import com.open.rbac.openrbac.dtos.PermissionDTO;
 import com.open.rbac.openrbac.services.MeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,8 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Aspect
 @Component
@@ -55,40 +52,19 @@ public class RequireAllPermissionsAspect {
         log.info("Checking ALL permissions for user: {} against required permissions: {}", username,
                 Arrays.toString(requiredPermissions));
 
-        // 4. Get user permissions (all permissions, not paginated)
-        List<PermissionDTO> userPermissions;
+        // 4. Check if user has ALL required permissions
         try {
-            userPermissions = meService.getMePermissions(username);
+            List<String> requiredPermissionsList = Arrays.asList(requiredPermissions);
+            boolean hasAllRequiredPermissions = meService.hasAllPermissions(username, requiredPermissionsList);
+
+            if (!hasAllRequiredPermissions) {
+                log.info("Access denied: User '{}' is missing some of the required permissions: {}",
+                        username, Arrays.toString(requiredPermissions));
+                throw new AccessDeniedException(requireAllPermissions.message());
+            }
         } catch (Exception e) {
-            log.error("Failed to retrieve permissions for user: {}", username, e);
-            throw new AccessDeniedException("Failed to retrieve user permissions");
-        }
-
-        if (userPermissions == null || userPermissions.isEmpty()) {
-            log.info("Access denied: User '{}' has no permissions assigned", username);
-            throw new AccessDeniedException(requireAllPermissions.message());
-        }
-
-        // 5. Parse required permissions and check if user has ALL (AND logic)
-        Set<String> userPermissionStrings = userPermissions.stream()
-                .filter(p -> p.resource() != null && p.action() != null)
-                .map(p -> p.resource() + ":" + p.action())
-                .collect(Collectors.toSet());
-
-        Set<String> requiredPermissionSet = Arrays.stream(requiredPermissions)
-                .filter(perm -> perm != null && !perm.trim().isEmpty())
-                .collect(Collectors.toSet());
-
-        boolean hasAllRequiredPermissions = userPermissionStrings.containsAll(requiredPermissionSet);
-
-        if (!hasAllRequiredPermissions) {
-            Set<String> missingPermissions = requiredPermissionSet.stream()
-                    .filter(perm -> !userPermissionStrings.contains(perm))
-                    .collect(Collectors.toSet());
-
-            log.info("Access denied: User '{}' with permissions {} is missing required permissions: {}",
-                    username, userPermissionStrings, missingPermissions);
-            throw new AccessDeniedException(requireAllPermissions.message());
+            log.error("Failed to check permissions for user: {}", username, e);
+            throw new AccessDeniedException("Failed to verify user permissions");
         }
 
         log.info("Access granted: User '{}' has ALL required permissions", username);
