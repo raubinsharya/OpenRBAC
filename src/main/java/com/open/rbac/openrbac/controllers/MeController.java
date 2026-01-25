@@ -16,17 +16,20 @@ public class MeController {
     private final MeService meService;
 
     @GetMapping
-    public ResponseEntity<?> getMe(@RequestParam(required = false) boolean includeRealm, @AuthenticationPrincipal Jwt jwt) {
-        return ResponseEntity.ok(meService.getUser(jwt.getClaim("preferred_username"), includeRealm));
+    public ResponseEntity<?> getMe(@RequestParam(required = false) boolean includeRealm,
+            @AuthenticationPrincipal Jwt jwt) {
+        return ResponseEntity.ok(meService.getUser(jwt.getSubject(), includeRealm));
     }
 
     @GetMapping("/roles")
-    public ResponseEntity<?> getRoles(@AuthenticationPrincipal Jwt jwt, @ModelAttribute RoleFilterRequest filterRequest) {
-        return ResponseEntity.ok(meService.getMeRoles(jwt.getClaim("preferred_username"), filterRequest));
+    public ResponseEntity<?> getRoles(@AuthenticationPrincipal Jwt jwt,
+            @ModelAttribute RoleFilterRequest filterRequest) {
+        return ResponseEntity.ok(meService.getMeRoles(jwt.getSubject(), filterRequest));
     }
 
     @GetMapping("/permissions")
-    public ResponseEntity<?> getPermissions(@AuthenticationPrincipal Jwt jwt, @ModelAttribute PermissionFilterRequest filterRequest) {
-        return ResponseEntity.ok(meService.getMePermissions(jwt.getClaim("preferred_username"), filterRequest));
+    public ResponseEntity<?> getPermissions(@AuthenticationPrincipal Jwt jwt,
+            @ModelAttribute PermissionFilterRequest filterRequest) {
+        return ResponseEntity.ok(meService.getMePermissions(jwt.getSubject(), filterRequest));
     }
 }

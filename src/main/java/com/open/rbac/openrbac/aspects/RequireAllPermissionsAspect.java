@@ -35,11 +35,11 @@ public class RequireAllPermissionsAspect {
             throw new AccessDeniedException("User not authenticated");
         }
 
-        // 2. Extract username with null check
-        String username = jwt.getClaimAsString("preferred_username");
-        if (username == null || username.trim().isEmpty()) {
-            log.warn("Access denied: Username not found in JWT token");
-            throw new AccessDeniedException("Username not found in token");
+        // 2. Extract user ID with null check
+        String keycloakUserId = jwt.getSubject();
+        if (keycloakUserId == null || keycloakUserId.trim().isEmpty()) {
+            log.warn("Access denied: Subject not found in JWT token");
+            throw new AccessDeniedException("Subject not found in token");
         }
 
         // 3. Validate required permissions
@@ -49,25 +49,25 @@ public class RequireAllPermissionsAspect {
             return joinPoint.proceed();
         }
 
-        log.info("Checking ALL permissions for user: {} against required permissions: {}", username,
+        log.info("Checking ALL permissions for user: {} against required permissions: {}", keycloakUserId,
                 Arrays.toString(requiredPermissions));
 
         // 4. Check if user has ALL required permissions
         try {
             List<String> requiredPermissionsList = Arrays.asList(requiredPermissions);
-            boolean hasAllRequiredPermissions = meService.hasAllPermissions(username, requiredPermissionsList);
+            boolean hasAllRequiredPermissions = meService.hasAllPermissions(keycloakUserId, requiredPermissionsList);
 
             if (!hasAllRequiredPermissions) {
                 log.info("Access denied: User '{}' is missing some of the required permissions: {}",
-                        username, Arrays.toString(requiredPermissions));
+                        keycloakUserId, Arrays.toString(requiredPermissions));
                 throw new AccessDeniedException(requireAllPermissions.message());
             }
         } catch (Exception e) {
-            log.error("Failed to check permissions for user: {}", username, e);
+            log.error("Failed to check permissions for user: {}", keycloakUserId, e);
             throw new AccessDeniedException("Failed to verify user permissions");
         }
 
-        log.info("Access granted: User '{}' has ALL required permissions", username);
+        log.info("Access granted: User '{}' has ALL required permissions", keycloakUserId);
         return joinPoint.proceed();
     }
 }

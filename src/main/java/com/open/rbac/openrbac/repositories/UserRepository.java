@@ -12,5 +12,7 @@ import java.util.Optional;
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
     Optional<User> findByUsername(String username);
 
+    Optional<User> findByKeycloakUserId(String keycloakUserId);
+
     Optional<List<User>> findAllByIdInAndRealm_Id(List<Long> ids, Long realmId);
 }

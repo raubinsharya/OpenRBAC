@@ -35,17 +35,17 @@ public class MeService {
         private final UserEffectiveRoleRepository userEffectiveRoleRepository;
         private final UserEffectivePermissionRepository userEffectivePermissionRepository;
 
-        public Optional<UserDTO> getUser(String username, boolean includeRealm) {
+        public Optional<UserDTO> getUser(String keycloakUserId, boolean includeRealm) {
                 Specification<User> userSpecification = Specification.allOf(
                                 UserSpecification.hasStatus("active"),
-                                UserSpecification.hasUserName(username),
+                                UserSpecification.hasKeycloakUserId(keycloakUserId),
                                 UserSpecification.includeRealm(includeRealm));
                 return userRepository.findAll(userSpecification).stream().findFirst()
                                 .map(u -> UserDTO.from(u, includeRealm));
         }
 
-        public List<RoleDTO> getMeRoles(String userName) {
-                User user = userRepository.findByUsername(userName)
+        public List<RoleDTO> getMeRoles(String keycloakUserId) {
+                User user = userRepository.findByKeycloakUserId(keycloakUserId)
                                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
                 Long realmId = user.getRealm().getId();
                 Specification<UserEffectiveRole> spec = Specification.allOf(
@@ -68,8 +68,8 @@ public class MeService {
 
         }
 
-        public boolean hasAnyRole(String username, List<String> roleNames) {
-                User user = userRepository.findByUsername(username)
+        public boolean hasAnyRole(String keycloakUserId, List<String> roleNames) {
+                User user = userRepository.findByKeycloakUserId(keycloakUserId)
                                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
                 Long realmId = user.getRealm().getId();
                 Specification<UserEffectiveRole> spec = Specification.allOf(
@@ -80,8 +80,8 @@ public class MeService {
                 return userEffectiveRoleRepository.exists(spec);
         }
 
-        public boolean hasAllRoles(String username, List<String> roleNames) {
-                User user = userRepository.findByUsername(username)
+        public boolean hasAllRoles(String keycloakUserId, List<String> roleNames) {
+                User user = userRepository.findByKeycloakUserId(keycloakUserId)
                                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
                 Long realmId = user.getRealm().getId();
                 Specification<UserEffectiveRole> spec = Specification.allOf(
@@ -112,9 +112,9 @@ public class MeService {
                 return uniqueMatchingRoles >= roleNames.size();
         }
 
-        public boolean hasAnyPermission(String username, List<String> permissions) {
+        public boolean hasAnyPermission(String keycloakUserId, List<String> permissions) {
                 // Permissions are "resource:action" strings
-                User user = userRepository.findByUsername(username)
+                User user = userRepository.findByKeycloakUserId(keycloakUserId)
                                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
                 Long realmId = user.getRealm().getId();
 
@@ -138,8 +138,8 @@ public class MeService {
                 return false;
         }
 
-        public boolean hasAllPermissions(String username, List<String> permissions) {
-                User user = userRepository.findByUsername(username)
+        public boolean hasAllPermissions(String keycloakUserId, List<String> permissions) {
+                User user = userRepository.findByKeycloakUserId(keycloakUserId)
                                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
                 Long realmId = user.getRealm().getId();
 
@@ -167,8 +167,8 @@ public class MeService {
                 return true;
         }
 
-        public List<PermissionDTO> getMePermissions(String userName) {
-                User user = userRepository.findByUsername(userName)
+        public List<PermissionDTO> getMePermissions(String keycloakUserId) {
+                User user = userRepository.findByKeycloakUserId(keycloakUserId)
                                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
                 Long realmId = user.getRealm().getId();
                 Specification<UserEffectivePermission> spec = Specification.allOf(
@@ -189,9 +189,9 @@ public class MeService {
                                 .collect(Collectors.toList());
         }
 
-        public PagedResponse<UserRoleDTO> getMeRoles(String userName, RoleFilterRequest filter) {
+        public PagedResponse<UserRoleDTO> getMeRoles(String keycloakUserId, RoleFilterRequest filter) {
                 // Need user ID first
-                User user = userRepository.findByUsername(userName)
+                User user = userRepository.findByKeycloakUserId(keycloakUserId)
                                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
                 Long realmId = user.getRealm().getId();
 
@@ -207,9 +207,10 @@ public class MeService {
                                 UserRoleDTO::from);
         }
 
-        public PagedResponse<UserPermissionDTO> getMePermissions(String userName, PermissionFilterRequest filter) {
+        public PagedResponse<UserPermissionDTO> getMePermissions(String keycloakUserId,
+                        PermissionFilterRequest filter) {
                 // Need user ID first
-                User user = userRepository.findByUsername(userName)
+                User user = userRepository.findByKeycloakUserId(keycloakUserId)
                                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
                 Long realmId = user.getRealm().getId();
 

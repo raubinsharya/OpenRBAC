@@ -34,11 +34,11 @@ public class RequireAnyRoleAspect {
             throw new AccessDeniedException("User not authenticated");
         }
 
-        // 2. Extract username with null check
-        String username = jwt.getClaimAsString("preferred_username");
-        if (username == null || username.trim().isEmpty()) {
-            log.warn("Access denied: Username not found in JWT token");
-            throw new AccessDeniedException("Username not found in token");
+        // 2. Extract user ID with null check
+        String keycloakUserId = jwt.getSubject();
+        if (keycloakUserId == null || keycloakUserId.trim().isEmpty()) {
+            log.warn("Access denied: Subject not found in JWT token");
+            throw new AccessDeniedException("Subject not found in token");
         }
 
         // 3. Validate required roles
@@ -48,23 +48,24 @@ public class RequireAnyRoleAspect {
             return joinPoint.proceed();
         }
 
-        log.info("Checking roles for user: {} against required roles: {}", username, Arrays.toString(requiredRoles));
+        log.info("Checking roles for user: {} against required roles: {}", keycloakUserId,
+                Arrays.toString(requiredRoles));
 
         // 4. Check if user has any of the required roles
         try {
             List<String> requiredRolesList = Arrays.asList(requiredRoles);
-            boolean hasRequiredRole = meService.hasAnyRole(username, requiredRolesList);
+            boolean hasRequiredRole = meService.hasAnyRole(keycloakUserId, requiredRolesList);
 
             if (!hasRequiredRole) {
                 log.info("Access denied: User '{}' does not have any of the required roles: {}",
-                        username, Arrays.toString(requiredRoles));
+                        keycloakUserId, Arrays.toString(requiredRoles));
                 throw new AccessDeniedException(requireAnyRole.message());
             }
         } catch (Exception e) {
-            log.error("Failed to check roles for user: {}", username, e);
+            log.error("Failed to check roles for user: {}", keycloakUserId, e);
             throw new AccessDeniedException("Failed to verify user roles");
         }
-        log.info("Access granted: User '{}' has required role(s)", username);
+        log.info("Access granted: User '{}' has required role(s)", keycloakUserId);
         return joinPoint.proceed();
     }
 }
