@@ -7,8 +7,11 @@ import com.open.rbac.openrbac.dtos.RoleDTO;
 import com.open.rbac.openrbac.models.Role;
 import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.repositories.RoleRepository;
+import com.open.rbac.openrbac.models.User;
+import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.RoleSpecification;
+import com.open.rbac.openrbac.utils.SecurityUtils;
 
 import lombok.RequiredArgsConstructor;
 
@@ -28,14 +31,17 @@ public class RoleService {
 
     private final RoleRepository roleRepository;
     private final RealmRepository realmRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public PagedResponse<RoleDTO> getAllRoles(Long realmId, RoleFilterRequest roleFilterRequest) {
         Specification<Role> spec = Specification.allOf(RoleSpecification.hasRealm(realmId))
                 .and(RoleSpecification.searchByNameIgnoreCase(roleFilterRequest.getName()))
                 .and(RoleSpecification.hasStatus(roleFilterRequest.getStatus()))
+                .and(RoleSpecification.hasCreatedBy(roleFilterRequest.getCreatedBy()))
                 .and(BaseSpecification.withBaseFilters(roleFilterRequest))
-                .and(RoleSpecification.isSystemRole(roleFilterRequest.getIsSystemRole()));
+                .and(RoleSpecification.isSystemRole(roleFilterRequest.getIsSystemRole()))
+                .and(RoleSpecification.fetchWithCreatedBy());
         return PagedResponse.fromPage(roleRepository.findAll(spec, roleFilterRequest.toPageable()), RoleDTO::from);
     }
 
@@ -53,6 +59,16 @@ public class RoleService {
         var realm = realmRepository.findById(realmId)
                 .orElseThrow(() -> new IllegalArgumentException("Realm id " + realmId + " not found"));
         role.setRealm(realm);
+
+        User creator = SecurityUtils.getAuthenticatedUser(jwt -> {
+            String sub = jwt.getSubject();
+            if (sub != null) {
+                return userRepository.findByKeycloakUserId(sub).orElse(null);
+            }
+            return null;
+        });
+        role.setCreatedBy(creator);
+
         return roleRepository.save(role);
     }
 }

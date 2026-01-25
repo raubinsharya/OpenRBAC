@@ -17,7 +17,7 @@ public class GroupController {
 
     @GetMapping
     public ResponseEntity<?> getAllGroups(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @ModelAttribute GroupFilterRequest groupFilterRequest) {
 
         var groups = groupService.getAllGroups(realmId, groupFilterRequest);
@@ -26,7 +26,7 @@ public class GroupController {
 
     @GetMapping("{id}")
     public ResponseEntity<?> getGroupById(@PathVariable Long id,
-            @PathVariable Long realmId) {
+            @PathVariable String realmId) {
 
         var group = groupService.getGroupById(realmId, id);
         return ResponseEntity.ok(group);
@@ -34,7 +34,7 @@ public class GroupController {
 
     @PostMapping
     public ResponseEntity<?> createGroup(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @Valid @RequestBody CreateGroupRequest createGroupRequest) {
         return ResponseEntity.ok(groupService.createGroup(realmId, createGroupRequest));
     }

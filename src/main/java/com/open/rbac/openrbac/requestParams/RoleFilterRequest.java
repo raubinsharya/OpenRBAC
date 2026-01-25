@@ -15,4 +15,5 @@ public class RoleFilterRequest extends BaseFilter {
     private String status;
     private Boolean isSystemRole;
     private String assignmentType;
+    private String createdBy;
 }

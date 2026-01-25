@@ -1,8 +1,6 @@
 package com.open.rbac.openrbac.specifications;
 
 import com.open.rbac.openrbac.models.Group;
-import com.open.rbac.openrbac.models.Role;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -26,11 +24,18 @@ public class GroupSpecification {
         };
     }
 
-    public static Specification<Group> hasRealm(Long realmId) {
+    public static Specification<Group> hasRealm(String realmIdentifier) {
         return (root, query, cb) -> {
-            if (realmId == null)
+            if (realmIdentifier == null || realmIdentifier.trim().isEmpty())
                 return null;
-            return cb.equal(root.get("realm").get("id"), realmId);
+            try {
+                Long id = Long.parseLong(realmIdentifier);
+                return cb.equal(root.get("realm").get("id"), id);
+            } catch (NumberFormatException e) {
+                Predicate namePredicate = cb.equal(root.get("realm").get("name"), realmIdentifier);
+                Predicate realmIdPredicate = cb.equal(root.get("realm").get("realmId"), realmIdentifier);
+                return cb.or(namePredicate, realmIdPredicate);
+            }
         };
     }
 
@@ -75,6 +80,23 @@ public class GroupSpecification {
             if (dateTime == null)
                 return null;
             return cb.lessThan(root.get("updatedAt"), dateTime);
+        };
+    }
+
+    public static Specification<Group> fetchWithCreatedBy() {
+        return (root, query, cb) -> {
+            if (query != null && (Long.class != query.getResultType()) && (long.class != query.getResultType())) {
+                root.fetch("createdBy", jakarta.persistence.criteria.JoinType.LEFT);
+            }
+            return null;
+        };
+    }
+
+    public static Specification<Group> hasCreatedBy(String createdBy) {
+        return (root, query, cb) -> {
+            if (createdBy == null || createdBy.trim().isEmpty())
+                return null;
+            return cb.like(cb.lower(root.get("createdBy").get("username")), "%" + createdBy.toLowerCase() + "%");
         };
     }
 }

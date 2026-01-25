@@ -63,6 +63,7 @@ public class MeService {
                                                        // defaulting false or
                                                        // need to fetch
                                                 role.assignedAt(),
+                                                null,
                                                 null))
                                 .collect(Collectors.toList());
 
@@ -185,6 +186,7 @@ public class MeService {
                                                 null,
                                                 perm.permissionStatus(),
                                                 perm.assignedAt(),
+                                                null,
                                                 null))
                                 .collect(Collectors.toList());
         }

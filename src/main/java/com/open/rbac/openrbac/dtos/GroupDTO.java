@@ -19,7 +19,8 @@ public record GroupDTO(
         EntityStatus status,
         List<GroupDTO> children,
         GroupDTO parent,
-        List<Long> ancestors) {
+        List<Long> ancestors,
+        String createdBy) {
 
     public static GroupDTO from(Group group) {
         return from(group, null, null);
@@ -43,6 +44,7 @@ public record GroupDTO(
                 group.getStatus(),
                 children,
                 parent,
-                group.getAncestorIds());
+                group.getAncestorIds(),
+                group.getCreatedBy() != null ? group.getCreatedBy().getDisplayName() : null);
     }
 }

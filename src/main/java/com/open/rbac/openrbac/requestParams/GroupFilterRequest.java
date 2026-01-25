@@ -6,7 +6,6 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
-
 @Data
 
 @NoArgsConstructor
@@ -17,4 +16,5 @@ public class GroupFilterRequest extends BaseFilter {
     private String name;
     private String description;
     private String status;
+    private String createdBy;
 }

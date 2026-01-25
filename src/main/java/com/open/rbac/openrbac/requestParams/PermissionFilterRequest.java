@@ -15,4 +15,5 @@ public class PermissionFilterRequest extends BaseFilter {
     private String resource;
     private String action;
     private String assignmentType;
+    private String createdBy;
 }

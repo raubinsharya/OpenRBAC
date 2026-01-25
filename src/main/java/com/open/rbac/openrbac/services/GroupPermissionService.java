@@ -69,9 +69,9 @@ public class GroupPermissionService {
                 }
 
                 final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
-                        String username = jwt.getClaimAsString("preferred_username");
-                        if (username != null) {
-                                return userRepository.findByUsername(username).orElse(null);
+                        String sub = jwt.getSubject();
+                        if (sub != null) {
+                                return userRepository.findByKeycloakUserId(sub).orElse(null);
                         }
                         return null;
                 });

@@ -14,6 +14,9 @@ import com.open.rbac.openrbac.requests.StandardPermission;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.PermissionSpecification;
 import jakarta.validation.Valid;
+import com.open.rbac.openrbac.models.User;
+import com.open.rbac.openrbac.repositories.UserRepository;
+import com.open.rbac.openrbac.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.retry.annotation.Backoff;
@@ -36,6 +39,7 @@ public class PermissionService {
 
         private final PermissionRepository permissionRepository;
         private final RealmRepository realmRepository;
+        private final UserRepository userRepository;
 
         @Transactional(readOnly = true)
         public PagedResponse<PermissionDTO> getAllPermissions(Long realmId,
@@ -49,7 +53,10 @@ public class PermissionService {
                                                 .and(PermissionSpecification
                                                                 .hasAction(permissionFilterRequest.getAction()))
                                                 .and(PermissionSpecification
-                                                                .hasResource(permissionFilterRequest.getResource())));
+                                                                .hasResource(permissionFilterRequest.getResource()))
+                                                .and(PermissionSpecification
+                                                                .hasCreatedBy(permissionFilterRequest.getCreatedBy()))
+                                                .and(PermissionSpecification.fetchWithCreatedBy()));
                 return PagedResponse.fromPage(permissionRepository.findAll(spec, permissionFilterRequest.toPageable()),
                                 PermissionDTO::from);
         }
@@ -70,6 +77,16 @@ public class PermissionService {
                 Realm realm = realmRepository.findById(realmId)
                                 .orElseThrow(() -> new IllegalArgumentException("Realm not found"));
                 permission.setRealm(realm);
+
+                final User createdBy = SecurityUtils.getAuthenticatedUser(jwt -> {
+                        String sub = jwt.getSubject();
+                        if (sub != null) {
+                                return userRepository.findByKeycloakUserId(sub).orElse(null);
+                        }
+                        return null;
+                });
+                permission.setCreatedBy(createdBy);
+
                 return permissionRepository.save(permission);
         }
 
@@ -80,6 +97,14 @@ public class PermissionService {
         public ArrayList<PermissionDTO> createStandardPermission(
                         long realmId,
                         @Valid StandardPermission standardPermission) {
+
+                final User creator = SecurityUtils.getAuthenticatedUser(jwt -> {
+                        String sub = jwt.getSubject();
+                        if (sub != null) {
+                                return userRepository.findByKeycloakUserId(sub).orElse(null);
+                        }
+                        return null;
+                });
 
                 Realm realm = realmRepository.findById(realmId)
                                 .orElseThrow(() -> new IllegalArgumentException("Realm not found"));
@@ -110,6 +135,7 @@ public class PermissionService {
                                 .map(e -> {
                                         Permission p = new Permission();
                                         p.setRealm(realm);
+                                        p.setCreatedBy(creator);
                                         p.setName(e.getKey());
                                         p.setResource(resource);
                                         p.setAction(e.getValue().name().toUpperCase());

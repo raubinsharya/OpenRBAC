@@ -2,15 +2,20 @@ package com.open.rbac.openrbac.services;
 
 import com.open.rbac.openrbac.requestParams.GroupFilterRequest;
 import com.open.rbac.openrbac.annotations.RequireAllRoles;
-import com.open.rbac.openrbac.annotations.RequireAnyRole;
 import com.open.rbac.openrbac.dtos.GroupDTO;
 import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.models.Group;
+import com.open.rbac.openrbac.models.Realm;
 import com.open.rbac.openrbac.repositories.GroupRepository;
 import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.requests.CreateGroupRequest;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.GroupSpecification;
+import com.open.rbac.openrbac.specifications.RealmSpecification;
+
+import com.open.rbac.openrbac.models.User;
+import com.open.rbac.openrbac.repositories.UserRepository;
+import com.open.rbac.openrbac.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
@@ -27,23 +32,27 @@ public class GroupService {
 
     private final GroupRepository groupRepository;
     private final RealmRepository realmRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
-    public PagedResponse<GroupDTO> getAllGroups(Long realmId, GroupFilterRequest groupFilterRequest) {
-        Specification<Group> specification = Specification.allOf(GroupSpecification.hasRealm(realmId))
+    public PagedResponse<GroupDTO> getAllGroups(String realmIdentifier, GroupFilterRequest groupFilterRequest) {
+        Specification<Group> specification = Specification.allOf(GroupSpecification.hasRealm(realmIdentifier))
                 .and(GroupSpecification.searchByNameIgnoreCase(groupFilterRequest.getName()))
                 .and(GroupSpecification.hasStatus(groupFilterRequest.getStatus()))
-                .and(BaseSpecification.withBaseFilters(groupFilterRequest));
+                .and(GroupSpecification.hasCreatedBy(groupFilterRequest.getCreatedBy()))
+                .and(BaseSpecification.withBaseFilters(groupFilterRequest))
+                .and(GroupSpecification.fetchWithCreatedBy());
 
         var groups = groupRepository.findAll(specification, groupFilterRequest.toPageable());
         return PagedResponse.fromPage(groups, GroupDTO::from);
     }
 
-    @RequireAllRoles(value = { "realm-admin", "developer" })
+    @RequireAllRoles(value = { "realm-admin" })
     @Transactional(rollbackFor = Exception.class)
-    public Group createGroup(long realmId, CreateGroupRequest createGroupRequest) {
-        var realm = realmRepository.findById(realmId)
-                .orElseThrow(() -> new IllegalArgumentException("Realm id " + realmId + " not found"));
+    public Group createGroup(String realmIdentifier, CreateGroupRequest createGroupRequest) {
+        Specification<Realm> specification = RealmSpecification.hasIdOrName(realmIdentifier);
+        var realm = realmRepository.findOne(specification)
+                .orElseThrow(() -> new IllegalArgumentException("Realm id " + realmIdentifier + " not found"));
 
         Group parentGroup = null;
         String path = "/";
@@ -57,6 +66,18 @@ public class GroupService {
             path = parentGroup.generatePathForChild();
         }
 
+        final User createdBy = SecurityUtils.getAuthenticatedUser(jwt -> {
+            String sub = jwt.getSubject(); // This is the keycloak_user_id
+            if (sub != null) {
+                return userRepository.findByKeycloakUserId(sub).orElse(null);
+            }
+            return null;
+        });
+
+        // Ensure createdBy is not null if we want to enforce it, but for now we can let
+        // it be null or throw.
+        // Usually system actions imply null createdBy, but this is an API call.
+
         Group group = Group.builder()
                 .realm(realm)
                 .name(createGroupRequest.name())
@@ -65,12 +86,14 @@ public class GroupService {
                 .status(createGroupRequest.status())
                 .level(level)
                 .path(path)
+                .createdBy(createdBy)
                 .build();
         return groupRepository.save(group);
     }
 
-    public GroupDTO getGroupById(Long realmId, Long id) {
-        Specification<Group> specification = GroupSpecification.hasRealm(realmId).and(GroupSpecification.hasId(id));
+    public GroupDTO getGroupById(String realmIdentifier, Long id) {
+        Specification<Group> specification = GroupSpecification.hasRealm(realmIdentifier)
+                .and(GroupSpecification.hasId(id));
         return groupRepository.findOne(specification).stream().map(GroupDTO::from).findFirst().orElse(null);
     }
 
@@ -148,6 +171,6 @@ public class GroupService {
                 currentDTO.updatedAt(),
                 currentDTO.status(),
                 currentDTO.children(),
-                parentDTO, currentDTO.ancestors());
+                parentDTO, currentDTO.ancestors(), currentDTO.createdBy());
     }
 }

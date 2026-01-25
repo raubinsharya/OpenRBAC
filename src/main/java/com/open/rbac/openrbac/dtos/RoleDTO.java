@@ -14,10 +14,11 @@ public record RoleDTO(
         EntityStatus status,
         Boolean isSystemRole,
         LocalDateTime createdAt,
-        LocalDateTime updatedAt
-) {
+        LocalDateTime updatedAt,
+        String createdBy) {
     public static RoleDTO from(Role role) {
-        if (role == null) return null;
+        if (role == null)
+            return null;
         return new RoleDTO(
                 role.getId(),
                 role.getName(),
@@ -25,7 +26,7 @@ public record RoleDTO(
                 role.getStatus(),
                 role.getIsSystemRole(),
                 role.getCreatedAt(),
-                role.getUpdatedAt()
-        );
+                role.getUpdatedAt(),
+                role.getCreatedBy() != null ? role.getCreatedBy().getDisplayName() : null);
     }
 }

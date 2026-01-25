@@ -9,15 +9,17 @@ import java.util.List;
 
 @JsonInclude(JsonInclude.Include.NON_EMPTY)
 public record PermissionDTO(Long id,
-                            String name,
-                            String resource,
-                            String action,
-                            String description,
-                            EntityStatus status,
-                            LocalDateTime createdAt,
-                            LocalDateTime updatedAt) {
+        String name,
+        String resource,
+        String action,
+        String description,
+        EntityStatus status,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt,
+        String createdBy) {
     public static PermissionDTO from(Permission permission) {
-        if (permission == null) return null;
+        if (permission == null)
+            return null;
         return new PermissionDTO(
                 permission.getId(),
                 permission.getName(),
@@ -26,7 +28,7 @@ public record PermissionDTO(Long id,
                 permission.getDescription(),
                 permission.getStatus(),
                 permission.getCreatedAt(),
-                permission.getUpdatedAt()
-        );
+                permission.getUpdatedAt(),
+                permission.getCreatedBy() != null ? permission.getCreatedBy().getDisplayName() : null);
     }
 }

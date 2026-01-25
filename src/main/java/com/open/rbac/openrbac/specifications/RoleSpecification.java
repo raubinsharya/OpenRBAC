@@ -109,4 +109,20 @@ public class RoleSpecification {
         };
     }
 
+    public static Specification<Role> fetchWithCreatedBy() {
+        return (root, query, cb) -> {
+            if (query != null && Long.class != query.getResultType() && long.class != query.getResultType()) {
+                root.fetch("createdBy", jakarta.persistence.criteria.JoinType.LEFT);
+            }
+            return null;
+        };
+    }
+
+    public static Specification<Role> hasCreatedBy(String createdBy) {
+        return (root, query, cb) -> {
+            if (createdBy == null || createdBy.trim().isEmpty())
+                return null;
+            return cb.like(cb.lower(root.get("createdBy").get("username")), "%" + createdBy.toLowerCase() + "%");
+        };
+    }
 }
