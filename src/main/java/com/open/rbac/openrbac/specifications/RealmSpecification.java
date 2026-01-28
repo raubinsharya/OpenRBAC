@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.specifications;
 
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.open.rbac.openrbac.models.Realm;
@@ -33,7 +34,9 @@ public class RealmSpecification {
                 Long realmIdLong = Long.parseLong(realmIdentifier);
                 return cb.equal((root.get("id")), realmIdLong);
             } catch (Exception e) {
-                return cb.equal((root.get("name")), realmIdentifier);
+                Predicate namePred = cb.equal(root.get("name"), realmIdentifier);
+                Predicate realmIdPred = cb.equal(root.get("realmId"), realmIdentifier);
+                return cb.or(namePred, realmIdPred);
             }
         };
     }

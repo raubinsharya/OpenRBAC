@@ -65,7 +65,8 @@ public class PermissionService {
         public PermissionDTO getPermissionById(Long realmId, Long permissionId) {
                 Specification<Permission> spec = Specification
                                 .allOf(PermissionSpecification.hasRealm(realmId))
-                                .and(PermissionSpecification.hasId(permissionId));
+                                .and(PermissionSpecification.hasId(permissionId))
+                                .and(PermissionSpecification.fetchWithCreatedBy());
                 return PermissionDTO.from(permissionRepository.findOne(spec).orElse(null));
         }
 

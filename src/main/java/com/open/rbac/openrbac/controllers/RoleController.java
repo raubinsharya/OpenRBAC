@@ -17,7 +17,7 @@ public class RoleController {
 
     @GetMapping
     public ResponseEntity<?> getAllRoles(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @ModelAttribute RoleFilterRequest roleFilterRequest) {
 
         var roles = roleService.getAllRoles(realmId, roleFilterRequest);
@@ -27,7 +27,7 @@ public class RoleController {
     @GetMapping("{id}")
     public ResponseEntity<?> getRoleById(
             @PathVariable Long id,
-            @PathVariable Long realmId) {
+            @PathVariable String realmId) {
 
         var role = roleService.getRoleById(id, realmId);
         return ResponseEntity.ok(role);
@@ -35,7 +35,7 @@ public class RoleController {
 
     @PostMapping
     public ResponseEntity<?> createRole(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @RequestBody Role role) {
         return ResponseEntity.ok(roleService.createRole(realmId, role));
     }

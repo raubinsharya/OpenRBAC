@@ -41,6 +41,27 @@ public class RoleSpecification {
         };
     }
 
+    public static Specification<Role> hasRealm(String realmIdentifier) {
+        return (root, query, cb) -> {
+            if (realmIdentifier == null || realmIdentifier.trim().isEmpty())
+                return null;
+
+            var realmJoin = root.join("realm", JoinType.INNER);
+            if (query != null) {
+                query.distinct(true);
+            }
+
+            try {
+                Long id = Long.parseLong(realmIdentifier);
+                return cb.equal(realmJoin.get("id"), id);
+            } catch (NumberFormatException e) {
+                Predicate namePredicate = cb.equal(realmJoin.get("name"), realmIdentifier);
+                Predicate realmIdPredicate = cb.equal(realmJoin.get("realmId"), realmIdentifier);
+                return cb.or(namePredicate, realmIdPredicate);
+            }
+        };
+    }
+
     public static Specification<Role> searchByNameIgnoreCase(String search) {
         return (root, query, cb) -> {
             if (search == null || search.isEmpty()) {

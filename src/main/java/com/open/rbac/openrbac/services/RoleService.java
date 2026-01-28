@@ -34,8 +34,8 @@ public class RoleService {
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
-    public PagedResponse<RoleDTO> getAllRoles(Long realmId, RoleFilterRequest roleFilterRequest) {
-        Specification<Role> spec = Specification.allOf(RoleSpecification.hasRealm(realmId))
+    public PagedResponse<RoleDTO> getAllRoles(String realmIdentifier, RoleFilterRequest roleFilterRequest) {
+        Specification<Role> spec = Specification.allOf(RoleSpecification.hasRealm(realmIdentifier))
                 .and(RoleSpecification.searchByNameIgnoreCase(roleFilterRequest.getName()))
                 .and(RoleSpecification.hasStatus(roleFilterRequest.getStatus()))
                 .and(RoleSpecification.hasCreatedBy(roleFilterRequest.getCreatedBy()))
@@ -46,18 +46,21 @@ public class RoleService {
     }
 
     @Transactional(readOnly = true)
-    public RoleDTO getRoleById(Long id, Long realmId) {
-        Specification<Role> specification = Specification.allOf(RoleSpecification.hasRealm(realmId))
-                .and(RoleSpecification.hasId(id));
+    public RoleDTO getRoleById(Long id, String realmIdentifier) {
+        Specification<Role> specification = Specification.allOf(RoleSpecification.hasRealm(realmIdentifier))
+                .and(RoleSpecification.hasId(id))
+                .and(RoleSpecification.fetchWithCreatedBy());
         return RoleDTO.from(roleRepository.findOne(specification).orElse(null));
     }
 
     @Retryable(retryFor = { ConnectException.class,
             TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
     @RequireAnyRole(value = { "realm-admin" })
-    public Role createRole(long realmId, Role role) {
-        var realm = realmRepository.findById(realmId)
-                .orElseThrow(() -> new IllegalArgumentException("Realm id " + realmId + " not found"));
+    public Role createRole(String realmIdentifier, Role role) {
+        Specification<com.open.rbac.openrbac.models.Realm> spec = com.open.rbac.openrbac.specifications.RealmSpecification
+                .hasIdOrName(realmIdentifier);
+        var realm = realmRepository.findOne(spec)
+                .orElseThrow(() -> new IllegalArgumentException("Realm " + realmIdentifier + " not found"));
         role.setRealm(realm);
 
         User creator = SecurityUtils.getAuthenticatedUser(jwt -> {
