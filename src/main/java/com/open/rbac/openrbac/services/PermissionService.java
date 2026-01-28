@@ -42,10 +42,10 @@ public class PermissionService {
         private final UserRepository userRepository;
 
         @Transactional(readOnly = true)
-        public PagedResponse<PermissionDTO> getAllPermissions(Long realmId,
+        public PagedResponse<PermissionDTO> getAllPermissions(String realmIdentifier,
                         PermissionFilterRequest permissionFilterRequest) {
                 Specification<Permission> spec = Specification
-                                .allOf(PermissionSpecification.hasRealm(realmId))
+                                .allOf(PermissionSpecification.hasRealm(realmIdentifier))
                                 .and(PermissionSpecification.hasStatus(permissionFilterRequest.getStatus())
                                                 .and(PermissionSpecification.searchByNameIgnoreCase(
                                                                 permissionFilterRequest.getName()))
@@ -62,9 +62,9 @@ public class PermissionService {
         }
 
         @Transactional(readOnly = true)
-        public PermissionDTO getPermissionById(Long realmId, Long permissionId) {
+        public PermissionDTO getPermissionById(String realmIdentifier, Long permissionId) {
                 Specification<Permission> spec = Specification
-                                .allOf(PermissionSpecification.hasRealm(realmId))
+                                .allOf(PermissionSpecification.hasRealm(realmIdentifier))
                                 .and(PermissionSpecification.hasId(permissionId))
                                 .and(PermissionSpecification.fetchWithCreatedBy());
                 return PermissionDTO.from(permissionRepository.findOne(spec).orElse(null));
@@ -74,9 +74,12 @@ public class PermissionService {
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
         @RequireAnyRole(value = { "realm-admin" })
         @Transactional
-        public Permission createPermission(long realmId, Permission permission) {
-                Realm realm = realmRepository.findById(realmId)
-                                .orElseThrow(() -> new IllegalArgumentException("Realm not found"));
+        public Permission createPermission(String realmIdentifier, Permission permission) {
+                Specification<Realm> spec = com.open.rbac.openrbac.specifications.RealmSpecification
+                                .hasIdOrName(realmIdentifier);
+                Realm realm = realmRepository.findOne(spec)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Realm " + realmIdentifier + " not found"));
                 permission.setRealm(realm);
 
                 final User createdBy = SecurityUtils.getAuthenticatedUser(jwt -> {
@@ -96,7 +99,7 @@ public class PermissionService {
         @RequireAnyRole(value = { "realm-admin" })
         @Transactional
         public ArrayList<PermissionDTO> createStandardPermission(
-                        long realmId,
+                        String realmIdentifier,
                         @Valid StandardPermission standardPermission) {
 
                 final User creator = SecurityUtils.getAuthenticatedUser(jwt -> {
@@ -107,8 +110,11 @@ public class PermissionService {
                         return null;
                 });
 
-                Realm realm = realmRepository.findById(realmId)
-                                .orElseThrow(() -> new IllegalArgumentException("Realm not found"));
+                Specification<Realm> spec = com.open.rbac.openrbac.specifications.RealmSpecification
+                                .hasIdOrName(realmIdentifier);
+                Realm realm = realmRepository.findOne(spec)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Realm " + realmIdentifier + " not found"));
 
                 String resource = standardPermission.resource().toUpperCase();
 
@@ -128,7 +134,7 @@ public class PermissionService {
 
                 // 2. Fetch existing permissions in ONE query
                 Set<String> existing = permissionRepository
-                                .findExistingNames(realmId, permissionNames);
+                                .findExistingNames(realm.getId(), permissionNames);
 
                 // 3. Build only missing permissions
                 List<Permission> toInsert = permissionMap.entrySet().stream()

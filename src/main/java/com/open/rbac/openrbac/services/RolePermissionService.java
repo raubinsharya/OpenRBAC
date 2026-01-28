@@ -6,6 +6,7 @@ import com.open.rbac.openrbac.models.Permission;
 import com.open.rbac.openrbac.models.Role;
 import com.open.rbac.openrbac.models.User;
 import com.open.rbac.openrbac.repositories.PermissionRepository;
+import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.repositories.RoleRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requests.AddRolePermissionsRequest;
@@ -33,6 +34,7 @@ import java.util.List;
 @Transactional
 public class RolePermissionService {
 
+    private final RealmRepository realmRepository;
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final RolePermissionRepository rolePermissionRepository;
@@ -40,7 +42,8 @@ public class RolePermissionService {
 
     @Transactional
     @RequireAnyRole(value = { "realm-admin", "group-admin" })
-    public void addPermissionsToRole(Long realmId, Long roleId, AddRolePermissionsRequest request) {
+    public void addPermissionsToRole(String realmIdentifier, Long roleId, AddRolePermissionsRequest request) {
+        Long realmId = resolveRealmId(realmIdentifier);
         Role role = roleRepository.findOne(Specification.allOf(
                 RoleSpecification.hasId(roleId),
                 RoleSpecification.hasRealm(realmId)))
@@ -84,7 +87,8 @@ public class RolePermissionService {
 
     @Transactional
     @RequireAnyRole(value = { "realm-admin", "group-admin" })
-    public void removePermissionsFromRole(Long realmId, Long roleId, RemoveRolePermissionsRequest request) {
+    public void removePermissionsFromRole(String realmIdentifier, Long roleId, RemoveRolePermissionsRequest request) {
+        Long realmId = resolveRealmId(realmIdentifier);
         boolean roleExist = roleRepository.existsByIdAndRealm_id(roleId, realmId);
         if (!roleExist) {
             throw new EntityNotFoundException("Role not found");
@@ -99,8 +103,9 @@ public class RolePermissionService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<RolePermissionDTO> getRolePermissions(Long realmId, Long roleId,
+    public PagedResponse<RolePermissionDTO> getRolePermissions(String realmIdentifier, Long roleId,
             RolePermissionFilterRequest filter) {
+        Long realmId = resolveRealmId(realmIdentifier);
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
@@ -123,8 +128,9 @@ public class RolePermissionService {
     }
 
     @Transactional(readOnly = true)
-    public boolean checkRolePermission(Long realmId, Long roleId,
+    public boolean checkRolePermission(String realmIdentifier, Long roleId,
             CheckPermissionRequest request) {
+        Long realmId = resolveRealmId(realmIdentifier);
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
@@ -137,8 +143,9 @@ public class RolePermissionService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<String> getRoleResources(Long realmId, Long roleId,
+    public PagedResponse<String> getRoleResources(String realmIdentifier, Long roleId,
             Pageable pageable) {
+        Long realmId = resolveRealmId(realmIdentifier);
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
@@ -147,12 +154,20 @@ public class RolePermissionService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<String> getRoleActions(Long realmId, Long roleId,
+    public PagedResponse<String> getRoleActions(String realmIdentifier, Long roleId,
             Pageable pageable) {
+        Long realmId = resolveRealmId(realmIdentifier);
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
         return PagedResponse.fromPage(rolePermissionRepository.findDistinctActionsByRole(realmId, roleId, pageable),
                 s -> s);
+    }
+
+    private Long resolveRealmId(String realmIdentifier) {
+        return realmRepository
+                .findOne(com.open.rbac.openrbac.specifications.RealmSpecification.hasIdOrName(realmIdentifier))
+                .orElseThrow(() -> new EntityNotFoundException("Realm " + realmIdentifier + " not found"))
+                .getId();
     }
 }

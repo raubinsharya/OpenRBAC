@@ -22,7 +22,7 @@ public class RolePermissionController {
 
     @GetMapping
     public ResponseEntity<?> getRolePermissions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long id,
             @ModelAttribute @Valid RolePermissionFilterRequest filter) {
         return ResponseEntity.ok(rolePermissionService.getRolePermissions(realmId, id, filter));
@@ -30,7 +30,7 @@ public class RolePermissionController {
 
     @GetMapping("/check")
     public ResponseEntity<?> checkPermission(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long id,
             @ModelAttribute CheckPermissionRequest request) {
         boolean hasPermission = rolePermissionService.checkRolePermission(realmId, id, request);
@@ -39,7 +39,7 @@ public class RolePermissionController {
 
     @PostMapping
     public ResponseEntity<?> addPermissions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long id,
             @RequestBody @Valid AddRolePermissionsRequest request) {
         rolePermissionService.addPermissionsToRole(realmId, id, request);
@@ -48,7 +48,7 @@ public class RolePermissionController {
 
     @DeleteMapping
     public ResponseEntity<?> removePermissions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long id,
             @RequestBody @Valid RemoveRolePermissionsRequest request) {
         rolePermissionService.removePermissionsFromRole(realmId, id, request);
@@ -57,7 +57,7 @@ public class RolePermissionController {
 
     @GetMapping("/resources")
     public ResponseEntity<?> getRoleResources(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long id,
             Pageable pageable) {
         return ResponseEntity.ok(rolePermissionService.getRoleResources(realmId, id, pageable));
@@ -65,7 +65,7 @@ public class RolePermissionController {
 
     @GetMapping("/actions")
     public ResponseEntity<?> getRoleActions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long id,
             Pageable pageable) {
         return ResponseEntity.ok(rolePermissionService.getRoleActions(realmId, id, pageable));

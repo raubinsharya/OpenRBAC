@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.specifications;
 
 import com.open.rbac.openrbac.models.Permission;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
@@ -105,6 +106,27 @@ public class PermissionSpecification {
                 return null;
             var realmJoin = root.join("realm");
             return cb.equal(realmJoin.get("id"), realmId);
+        };
+    }
+
+    public static Specification<Permission> hasRealm(String realmIdentifier) {
+        return (root, query, cb) -> {
+            if (realmIdentifier == null || realmIdentifier.trim().isEmpty())
+                return null;
+
+            var realmJoin = root.join("realm", jakarta.persistence.criteria.JoinType.INNER);
+            if (query != null) {
+                query.distinct(true);
+            }
+
+            try {
+                Long id = Long.parseLong(realmIdentifier);
+                return cb.equal(realmJoin.get("id"), id);
+            } catch (NumberFormatException e) {
+                Predicate namePredicate = cb.equal(realmJoin.get("name"), realmIdentifier);
+                Predicate realmIdPredicate = cb.equal(realmJoin.get("realmId"), realmIdentifier);
+                return cb.or(namePredicate, realmIdPredicate);
+            }
         };
     }
 
