@@ -30,6 +30,29 @@ public class UserSpecification {
             return cb.and(userPredicate, realmPredicate);
         };
     }
+
+    public static Specification<User> hasUserId(Long userId, String realmIdentifier) {
+        return (root, query, cb) -> {
+            if (userId == null || realmIdentifier == null)
+                return null;
+
+            var realmJoin = root.join("realm", JoinType.INNER);
+            Predicate userPredicate = cb.equal(root.get("id"), userId);
+
+            Predicate realmPredicate;
+            try {
+                Long id = Long.parseLong(realmIdentifier);
+                realmPredicate = cb.equal(realmJoin.get("id"), id);
+            } catch (NumberFormatException e) {
+                Predicate namePredicate = cb.equal(realmJoin.get("name"), realmIdentifier);
+                Predicate realmIdPredicate = cb.equal(realmJoin.get("realmId"), realmIdentifier);
+                realmPredicate = cb.or(namePredicate, realmIdPredicate);
+            }
+
+            return cb.and(userPredicate, realmPredicate);
+        };
+    }
+
     public static Specification<User> hasUserName(String userName) {
         return (root, query, cb) -> {
             if (userName == null || userName.trim().isEmpty())
@@ -65,8 +88,30 @@ public class UserSpecification {
 
     public static Specification<User> hasRealmId(Long id) {
         return (root, query, cb) -> {
-            if (id == null) return null;
+            if (id == null)
+                return null;
             return cb.equal(root.get("realm").get("id"), id);
+        };
+    }
+
+    public static Specification<User> hasRealm(String realmIdentifier) {
+        return (root, query, cb) -> {
+            if (realmIdentifier == null || realmIdentifier.trim().isEmpty())
+                return null;
+
+            var realmJoin = root.join("realm", JoinType.INNER);
+            if (query != null) {
+                query.distinct(true);
+            }
+
+            try {
+                Long id = Long.parseLong(realmIdentifier);
+                return cb.equal(realmJoin.get("id"), id);
+            } catch (NumberFormatException e) {
+                Predicate namePredicate = cb.equal(realmJoin.get("name"), realmIdentifier);
+                Predicate realmIdPredicate = cb.equal(realmJoin.get("realmId"), realmIdentifier);
+                return cb.or(namePredicate, realmIdPredicate);
+            }
         };
     }
 
@@ -93,7 +138,6 @@ public class UserSpecification {
             return cb.like(cb.lower(root.get("lastName")), "%" + lastName.toLowerCase() + "%");
         };
     }
-
 
     public static Specification<User> hasKeycloakUserId(String keycloakUserId) {
         return (root, query, cb) -> {

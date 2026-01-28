@@ -31,10 +31,10 @@ public class UserService {
         @Retryable(retryFor = { SQLException.class, ConnectException.class,
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
         @Transactional(readOnly = true)
-        public PagedResponse<UserDTO> getAllUsers(UserFilterRequest userFilterRequest, Long realmId) {
+        public PagedResponse<UserDTO> getAllUsers(UserFilterRequest userFilterRequest, String realmIdentifier) {
                 Specification<User> specification = Specification
                                 .allOf(UserSpecification.hasStatus(userFilterRequest.getStatus())
-                                                .and(UserSpecification.hasRealmId(realmId))
+                                                .and(UserSpecification.hasRealm(realmIdentifier))
                                                 .and(UserSpecification.hasUserName(userFilterRequest.getUsername()))
                                                 .and(UserSpecification.hasFirstName(userFilterRequest.getFirstName()))
                                                 .and(UserSpecification.hasLastName(userFilterRequest.getLastName()))
@@ -46,8 +46,9 @@ public class UserService {
 
         @Retryable(retryFor = { SQLException.class, ConnectException.class,
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-        public UserDTO getUserById(Long id, Long realmId) {
-                Specification<User> specification = Specification.allOf(UserSpecification.hasUserId(id, realmId));
+        public UserDTO getUserById(Long id, String realmIdentifier) {
+                Specification<User> specification = Specification
+                                .allOf(UserSpecification.hasUserId(id, realmIdentifier));
                 return UserDTO.from(userRepository.findOne(specification).orElse(null));
         }
 }

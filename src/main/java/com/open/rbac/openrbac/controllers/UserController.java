@@ -2,7 +2,6 @@ package com.open.rbac.openrbac.controllers;
 
 import com.open.rbac.openrbac.requestParams.ResourceFilterRequest;
 import com.open.rbac.openrbac.requestParams.UserFilterRequest;
-import com.open.rbac.openrbac.services.PermissionService;
 import com.open.rbac.openrbac.services.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,7 +21,7 @@ public class UserController {
     @GetMapping
     public ResponseEntity<?> getAllUsers(
             @ModelAttribute @Valid UserFilterRequest userFilterRequest,
-            @PathVariable Long realmId) {
+            @PathVariable String realmId) {
         var users = userService.getAllUsers(userFilterRequest, realmId);
         return ResponseEntity.ok(users);
     }
@@ -30,14 +29,14 @@ public class UserController {
     @GetMapping("{id}")
     public ResponseEntity<?> getUserById(
             @PathVariable Long id,
-            @PathVariable Long realmId) {
+            @PathVariable String realmId) {
         var user = userService.getUserById(id, realmId);
         return ResponseEntity.ok(user);
     }
 
     @GetMapping("{id}/resources")
     public ResponseEntity<?> getUserResources(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable("id") Long userId,
             @ModelAttribute @Valid ResourceFilterRequest filter) {
         return ResponseEntity.ok(Map.of("resources", "Under Development"));
