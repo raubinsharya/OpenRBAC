@@ -20,7 +20,8 @@ public class UserEffectivePermissionSpecification {
             // Fetch relations to avoid N+1 issues - only for data query, not count query
             if (query != null && query.getResultType() != Long.class && query.getResultType() != long.class) {
                 root.fetch("user", JoinType.INNER);
-                root.fetch("permission", JoinType.INNER);
+                var permissionFetch = root.fetch("permission", JoinType.INNER);
+                permissionFetch.fetch("createdBy", JoinType.LEFT);
                 root.fetch("assignedBy", JoinType.LEFT);
             }
 

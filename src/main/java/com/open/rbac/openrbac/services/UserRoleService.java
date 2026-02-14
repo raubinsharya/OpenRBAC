@@ -38,15 +38,12 @@ public class UserRoleService {
     private final UserEffectiveRoleRepository userEffectiveRoleRepository;
 
     @Transactional
-    @RequireAnyRole(value = {"realm-admin", "group-admin"})
-    public void addRolesToUser(String realmId, Long userId, AddUserRolesRequest request) {
+//    @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    public void addRolesToUser(String realmIdentifier, Long userId, AddUserRolesRequest request) {
         User user = userRepository.findOne(
                         Specification.allOf(
-                                UserSpecification.hasUserId(userId, realmId),
-                                UserSpecification.includeRealm(true),
-                                UserSpecification.accountNotExpired(true))
-
-                )
+                                UserSpecification.hasUserId(userId, realmIdentifier),
+                                UserSpecification.includeRealm(true)))
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         final List<Role> validRoles = roleRepository
@@ -69,9 +66,9 @@ public class UserRoleService {
 
         // Get current user (assignedBy)
         final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
-            String username = jwt.getClaimAsString("preferred_username");
-            if (username != null) {
-                return userRepository.findByUsername(username).orElse(null);
+            String keyCloakUserId = jwt.getSubject();
+            if (keyCloakUserId != null) {
+                return userRepository.findByKeycloakUserId(keyCloakUserId).orElse(null);
             }
             return null;
         });
@@ -88,12 +85,11 @@ public class UserRoleService {
     }
 
     @Transactional
-    @RequireAnyRole(value = {"realm-admin", "group-admin"})
+//    @RequireAnyRole(value = {"realm-admin", "group-admin"})
     public void removeRolesFromUser(String realmId, Long userId, RemoveUserRolesRequest request) {
         // Verify user exists in realm
         boolean userExists = userRepository.exists(
-                Specification.allOf(UserSpecification.hasUserId(userId, realmId), UserSpecification.accountNotExpired(true))
-        );
+                Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
         if (!userExists) {
             throw new EntityNotFoundException("User not found");
         }
@@ -110,8 +106,7 @@ public class UserRoleService {
     @Transactional(readOnly = true)
     public PagedResponse<UserRoleDTO> getUserRoles(String realmIdentifier, Long userId, UserRoleFilterRequest filter) {
         // 1. Check User Existence
-        Specification<User> userSpecification = Specification.allOf(UserSpecification.hasUserId(userId, realmIdentifier))
-                .and(UserSpecification.accountNotExpired(true));
+        Specification<User> userSpecification = Specification.allOf(UserSpecification.hasUserId(userId, realmIdentifier));
         boolean userExists = userRepository.exists(userSpecification);
         if (!userExists) {
             throw new EntityNotFoundException("User not found");
@@ -143,8 +138,7 @@ public class UserRoleService {
         }
 
         // Verify user exists
-        userRepository.findOne(Specification.allOf(UserSpecification.hasUserId(userId, realmIdentifier),
-                        UserSpecification.accountNotExpired(true)))
+        userRepository.findOne(Specification.allOf(UserSpecification.hasUserId(userId, realmIdentifier)))
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         // Check against Effective Roles

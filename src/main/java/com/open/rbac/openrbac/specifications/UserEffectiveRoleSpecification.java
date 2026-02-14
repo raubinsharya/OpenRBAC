@@ -18,7 +18,7 @@ public class UserEffectiveRoleSpecification {
             }
 
             // Fetch Optimization ONLY for entity queries, NOT for count/exists
-            if (query.getResultType().equals(UserEffectiveRole.class)) {
+            if (query != null && UserEffectiveRole.class.equals(query.getResultType())) {
                 var roleFetch = root.fetch("role", JoinType.LEFT);
                 roleFetch.fetch("createdBy", JoinType.LEFT);
                 root.fetch("user", JoinType.LEFT);
@@ -42,7 +42,7 @@ public class UserEffectiveRoleSpecification {
             }
 
             // Fetch Optimization ONLY for entity queries, NOT for count/exists
-            if (query.getResultType().equals(UserEffectiveRole.class)) {
+            if (query != null && UserEffectiveRole.class.equals(query.getResultType())) {
                 root.fetch("role", JoinType.LEFT);
                 root.fetch("user", JoinType.LEFT);
                 root.fetch("sourceGroup", JoinType.LEFT);

@@ -41,7 +41,7 @@ public class UserPermissionService {
     private final UserEffectivePermissionRepository userEffectivePermissionRepository;
 
     @Transactional
-    @RequireAnyRole(value = {"realm-admin"})
+//    @RequireAnyRole(value = {"realm-admin"})
     public void addPermissionsToUser(String realmIdentifier, Long userId, AddUserPermissionsRequest request) {
         User user = userRepository.findOne(Specification.allOf(
                         UserSpecification.hasUserId(userId, realmIdentifier),
@@ -67,9 +67,9 @@ public class UserPermissionService {
         }
 
         final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
-            String username = jwt.getClaimAsString("preferred_username");
-            if (username != null) {
-                return userRepository.findByUsername(username).orElse(null);
+            String keycloakUserId = jwt.getSubject();
+            if (keycloakUserId != null) {
+                return userRepository.findByKeycloakUserId(keycloakUserId).orElse(null);
             }
             return null;
         });
@@ -86,7 +86,7 @@ public class UserPermissionService {
     }
 
     @Transactional
-    @RequireAnyRole(value = {"realm-admin"})
+//    @RequireAnyRole(value = {"realm-admin"})
     public void removePermissionsFromUser(String realmIdentifier, Long userId, RemoveUserPermissionsRequest request) {
         boolean userExists = userRepository
                 .exists(Specification.allOf(UserSpecification.hasUserId(userId, realmIdentifier)));
