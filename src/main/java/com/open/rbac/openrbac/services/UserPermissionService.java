@@ -35,148 +35,155 @@ import java.util.Objects;
 @Transactional
 public class UserPermissionService {
 
-        private final UserRepository userRepository;
-        private final PermissionRepository permissionRepository;
-        private final UserPermissionRepository userPermissionRepository;
-        private final UserEffectivePermissionRepository userEffectivePermissionRepository;
+    private final UserRepository userRepository;
+    private final PermissionRepository permissionRepository;
+    private final UserPermissionRepository userPermissionRepository;
+    private final UserEffectivePermissionRepository userEffectivePermissionRepository;
 
-        @Transactional
-        @RequireAnyRole(value = { "realm-admin" })
-        public void addPermissionsToUser(Long realmId, Long userId, AddUserPermissionsRequest request) {
-                User user = userRepository.findOne(Specification.allOf(
-                                UserSpecification.hasUserId(userId, realmId)))
-                                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+    @Transactional
+    @RequireAnyRole(value = {"realm-admin"})
+    public void addPermissionsToUser(String realmIdentifier, Long userId, AddUserPermissionsRequest request) {
+        User user = userRepository.findOne(Specification.allOf(
+                        UserSpecification.hasUserId(userId, realmIdentifier),
+                        UserSpecification.includeRealm(true)))
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
-                final List<Permission> validPermissions = permissionRepository
-                                .findAllByIdInAndRealm_Id(Objects.requireNonNull(request.getPermissionIds()), realmId);
+        final List<Permission> validPermissions = permissionRepository
+                .findAllByIdInAndRealm_Id(Objects.requireNonNull(request.getPermissionIds()), user.getRealm().getId());
 
-                List<Long> validPermissionIds = validPermissions.stream().map(Permission::getId).toList();
-                List<Long> notFoundPermissionIds = request.getPermissionIds().stream()
-                                .filter(id -> !validPermissionIds.contains(id))
-                                .toList();
+        List<Long> validPermissionIds = validPermissions.stream().map(Permission::getId).toList();
+        List<Long> notFoundPermissionIds = request.getPermissionIds().stream()
+                .filter(id -> !validPermissionIds.contains(id))
+                .toList();
 
-                if (!notFoundPermissionIds.isEmpty()) {
-                        throw new EntityNotFoundException("Permissions not found: " + notFoundPermissionIds);
-                }
-
-                List<Long> existingPermissionIds = userPermissionRepository.findExistingPermissionIds(userId,
-                                request.getPermissionIds());
-                if (!existingPermissionIds.isEmpty()) {
-                        throw new IllegalArgumentException("User already has permissions " + existingPermissionIds);
-                }
-
-                final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
-                        String username = jwt.getClaimAsString("preferred_username");
-                        if (username != null) {
-                                return userRepository.findByUsername(username).orElse(null);
-                        }
-                        return null;
-                });
-
-                List<UserPermission> userPermissions = validPermissions.stream().map(p -> UserPermission.builder()
-                                .user(user)
-                                .permission(p)
-                                .assignedBy(assignedBy)
-                                .expiryDate(request.getExpiryDate())
-                                .isActive(true)
-                                .build()).toList();
-
-                userPermissionRepository.saveAll(userPermissions);
+        if (!notFoundPermissionIds.isEmpty()) {
+            throw new EntityNotFoundException("Permissions not found: " + notFoundPermissionIds);
         }
 
-        @Transactional
-        @RequireAnyRole(value = { "realm-admin" })
-        public void removePermissionsFromUser(Long realmId, Long userId, RemoveUserPermissionsRequest request) {
-                boolean userExists = userRepository
-                                .exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
-                if (!userExists) {
-                        throw new EntityNotFoundException("User not found");
-                }
-
-                List<Long> existingPermissionIds = userPermissionRepository.findExistingPermissionIds(userId,
-                                request.getPermissionIds());
-                if (existingPermissionIds.size() != request.getPermissionIds().size()) {
-                        request.getPermissionIds().removeAll(new HashSet<>(existingPermissionIds));
-                        throw new EntityNotFoundException(
-                                        "Permissions are not assigned to this user: " + request.getPermissionIds());
-                }
-
-                userPermissionRepository.deleteByUserIdAndPermissionIdIn(userId, existingPermissionIds);
+        List<Long> existingPermissionIds = userPermissionRepository.findExistingPermissionIds(userId,
+                request.getPermissionIds());
+        if (!existingPermissionIds.isEmpty()) {
+            throw new IllegalArgumentException("User already has permissions " + existingPermissionIds);
         }
 
-        @Transactional(readOnly = true)
-        public PagedResponse<UserPermissionDTO> getUserPermissions(Long realmId, Long userId,
-                        UserPermissionFilterRequest filter) {
-                if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
-                        throw new EntityNotFoundException("User not found");
-                }
+        final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
+            String username = jwt.getClaimAsString("preferred_username");
+            if (username != null) {
+                return userRepository.findByUsername(username).orElse(null);
+            }
+            return null;
+        });
 
-                Specification<UserEffectivePermission> spec = Specification.allOf(
-                                UserEffectivePermissionSpecification
-                                                .ofUser(userId, realmId),
-                                UserEffectivePermissionSpecification
-                                                .isNotExpired(),
-                                UserEffectivePermissionSpecification
-                                                .hasPermissionName(filter.getPermissionName()),
-                                UserEffectivePermissionSpecification
-                                                .hasResource(filter.getResource()),
-                                UserEffectivePermissionSpecification
-                                                .hasAction(filter.getAction()),
-                                UserEffectivePermissionSpecification
-                                                .hasPermissionStatus(filter.getPermissionStatus()),
-                                UserEffectivePermissionSpecification
-                                                .hasUserStatus(filter.getUserStatus()),
-                                UserEffectivePermissionSpecification
-                                                .assignedBy(filter.getAssignedBy()),
-                                UserEffectivePermissionSpecification
-                                                .isActive(filter.getIsActive()),
-                                UserEffectivePermissionSpecification
-                                                .assignedAtBefore(filter.getAssignedAtBefore()),
-                                UserEffectivePermissionSpecification
-                                                .assignedAtAfter(filter.getAssignedAtAfter()),
-                                UserEffectivePermissionSpecification
-                                                .expiryDateBefore(filter.getExpiryDateBefore()),
-                                UserEffectivePermissionSpecification
-                                                .expiryDateAfter(filter.getExpiryDateAfter()),
-                                UserEffectivePermissionSpecification
-                                                .assignmentType(filter.getAssignmentType()),
-                                BaseSpecification.withBaseFilters(filter));
+        List<UserPermission> userPermissions = validPermissions.stream().map(p -> UserPermission.builder()
+                .user(user)
+                .permission(p)
+                .assignedBy(assignedBy)
+                .expiryDate(request.getExpiryDate())
+                .isActive(true)
+                .build()).toList();
 
-                return PagedResponse.fromPage(userEffectivePermissionRepository.findAll(spec, filter.toPageable()),
-                                p -> UserPermissionDTO.from(p));
+        userPermissionRepository.saveAll(userPermissions);
+    }
+
+    @Transactional
+    @RequireAnyRole(value = {"realm-admin"})
+    public void removePermissionsFromUser(String realmIdentifier, Long userId, RemoveUserPermissionsRequest request) {
+        boolean userExists = userRepository
+                .exists(Specification.allOf(UserSpecification.hasUserId(userId, realmIdentifier)));
+        if (!userExists) {
+            throw new EntityNotFoundException("User not found");
         }
 
-        @Transactional(readOnly = true)
-        public boolean checkPermission(Long realmId, Long userId,
-                        CheckPermissionRequest request) {
-                if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
-                        throw new EntityNotFoundException("User not found");
-                }
-                if (request.getResource() == null && request.getAction() == null
-                                && request.getPermissionName() == null) {
-                        return false;
-                }
-                return userEffectivePermissionRepository.checkPermission(realmId, userId, request.getResource(),
-                                request.getAction(), request.getAssignmentType(), request.getPermissionName());
+        List<Long> existingPermissionIds = userPermissionRepository.findExistingPermissionIds(userId,
+                request.getPermissionIds());
+        if (existingPermissionIds.size() != request.getPermissionIds().size()) {
+            request.getPermissionIds().removeAll(new HashSet<>(existingPermissionIds));
+            throw new EntityNotFoundException(
+                    "Permissions are not assigned to this user: " + request.getPermissionIds());
         }
 
-        @Transactional(readOnly = true)
-        public PagedResponse<String> getEffectiveUserResources(Long realmId, Long userId,
-                        Pageable pageable, String assignmentType) {
-                if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
-                        throw new EntityNotFoundException("User not found");
-                }
-                return PagedResponse.fromPage(userEffectivePermissionRepository.findDistinctResourcesByUser(realmId,
-                                userId, assignmentType, pageable), s -> s);
+        userPermissionRepository.deleteByUserIdAndPermissionIdIn(userId, existingPermissionIds);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<UserPermissionDTO> getUserPermissions(String realmIdentifier, Long userId,
+                                                               UserPermissionFilterRequest filter) {
+        if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmIdentifier)))) {
+            throw new EntityNotFoundException("User not found");
         }
 
-        @Transactional(readOnly = true)
-        public PagedResponse<String> getEffectiveUserActions(Long realmId, Long userId,
-                        Pageable pageable, String assignmentType) {
-                if (!userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)))) {
-                        throw new EntityNotFoundException("User not found");
-                }
-                return PagedResponse.fromPage(userEffectivePermissionRepository.findDistinctActionsByUser(realmId,
-                                userId, assignmentType, pageable), s -> s);
+        Specification<UserEffectivePermission> spec = Specification.allOf(
+                UserEffectivePermissionSpecification
+                        .ofUser(userId, realmIdentifier),
+                UserEffectivePermissionSpecification
+                        .isNotExpired(),
+                UserEffectivePermissionSpecification
+                        .hasPermissionName(filter.getPermissionName()),
+                UserEffectivePermissionSpecification
+                        .hasResource(filter.getResource()),
+                UserEffectivePermissionSpecification
+                        .hasAction(filter.getAction()),
+                UserEffectivePermissionSpecification
+                        .hasPermissionStatus(filter.getPermissionStatus()),
+                UserEffectivePermissionSpecification
+                        .hasUserStatus(filter.getUserStatus()),
+                UserEffectivePermissionSpecification
+                        .assignedBy(filter.getAssignedBy()),
+                UserEffectivePermissionSpecification
+                        .isActive(filter.getIsActive()),
+                UserEffectivePermissionSpecification
+                        .assignedAtBefore(filter.getAssignedAtBefore()),
+                UserEffectivePermissionSpecification
+                        .assignedAtAfter(filter.getAssignedAtAfter()),
+                UserEffectivePermissionSpecification
+                        .expiryDateBefore(filter.getExpiryDateBefore()),
+                UserEffectivePermissionSpecification
+                        .expiryDateAfter(filter.getExpiryDateAfter()),
+                UserEffectivePermissionSpecification
+                        .assignmentType(filter.getAssignmentType()),
+                BaseSpecification.withBaseFilters(filter));
+
+        return PagedResponse.fromPage(userEffectivePermissionRepository.findAll(spec, filter.toPageable()),
+                UserPermissionDTO::from);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean checkPermission(String realmId, Long userId,
+                                   CheckPermissionRequest request) {
+        Specification<User> userSpecification = Specification.allOf(
+                UserSpecification.hasUserId(userId, realmId),
+                UserSpecification.includeRealm(true));
+        var user = userRepository.findOne(userSpecification).orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        if (request.getResource() == null && request.getAction() == null
+                && request.getPermissionName() == null) {
+            return false;
         }
+        return userEffectivePermissionRepository.checkPermission(user.getRealm().getId(), userId, request.getResource(),
+                request.getAction(), request.getAssignmentType(), request.getPermissionName());
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<String> getEffectiveUserResources(String realmIdentifier, Long userId,
+                                                           Pageable pageable, String assignmentType) {
+        Specification<User> userSpecification = Specification.allOf(
+                UserSpecification.hasUserId(userId, realmIdentifier),
+                UserSpecification.includeRealm(true));
+        var user = userRepository.findOne(userSpecification).orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        return PagedResponse.fromPage(userEffectivePermissionRepository.findDistinctResourcesByUser(user.getRealm().getId(),
+                userId, assignmentType, pageable), s -> s);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<String> getEffectiveUserActions(String realmId, Long userId,
+                                                         Pageable pageable, String assignmentType) {
+        Specification<User> userSpecification = Specification.allOf(
+                UserSpecification.hasUserId(userId, realmId),
+                UserSpecification.includeRealm(true));
+        var user = userRepository.findOne(userSpecification).orElseThrow(() -> new EntityNotFoundException("User not found"));
+
+        return PagedResponse.fromPage(userEffectivePermissionRepository.findDistinctActionsByUser(user.getRealm().getId(),
+                userId, assignmentType, pageable), s -> s);
+    }
 }

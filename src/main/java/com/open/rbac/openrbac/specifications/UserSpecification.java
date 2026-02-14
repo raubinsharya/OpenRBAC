@@ -19,37 +19,29 @@ public class UserSpecification {
 
     }
 
-    public static Specification<User> hasUserId(Long userId, Long realmId) {
+    public static Specification<User> hasUserId(Long userId, String realmIdentifier) {
         return (root, query, cb) -> {
             if (userId == null)
                 return null;
             var realmJoin = root.join("realm", JoinType.INNER);
             Predicate userPredicate = cb.equal(root.get("id"), userId);
-            Predicate realmPredicate = cb.equal(realmJoin.get("id"), realmId);
+            Predicate realmPredicate;
+            try {
+                Long realmId = Long.parseLong(realmIdentifier);
+                realmPredicate = cb.equal(realmJoin.get("id"), realmId);
+            } catch (Exception e) {
+                realmPredicate = cb.equal(realmJoin.get("name"), realmIdentifier);
+            }
 
             return cb.and(userPredicate, realmPredicate);
         };
     }
 
-    public static Specification<User> hasUserId(Long userId, String realmIdentifier) {
+    public static Specification<User> hasUserId(Long userId) {
         return (root, query, cb) -> {
-            if (userId == null || realmIdentifier == null)
+            if (userId == null)
                 return null;
-
-            var realmJoin = root.join("realm", JoinType.INNER);
-            Predicate userPredicate = cb.equal(root.get("id"), userId);
-
-            Predicate realmPredicate;
-            try {
-                Long id = Long.parseLong(realmIdentifier);
-                realmPredicate = cb.equal(realmJoin.get("id"), id);
-            } catch (NumberFormatException e) {
-                Predicate namePredicate = cb.equal(realmJoin.get("name"), realmIdentifier);
-                Predicate realmIdPredicate = cb.equal(realmJoin.get("realmId"), realmIdentifier);
-                realmPredicate = cb.or(namePredicate, realmIdPredicate);
-            }
-
-            return cb.and(userPredicate, realmPredicate);
+            return cb.equal(root.get("id"), userId);
         };
     }
 
@@ -192,6 +184,50 @@ public class UserSpecification {
             if (description == null || description.trim().isEmpty())
                 return null;
             return cb.like(cb.lower(root.get("description")), "%" + description.toLowerCase() + "%");
+        };
+    }
+
+    public static Specification<User> accountExpiryDateAfter(LocalDateTime date) {
+        return (root, query, cb) -> {
+            if (date == null)
+                return null;
+            return cb.greaterThanOrEqualTo(root.get("accountExpiryDate"), date);
+        };
+    }
+
+    public static Specification<User> accountExpiryDateBefore(LocalDateTime date) {
+        return (root, query, cb) -> {
+            if (date == null)
+                return null;
+            return cb.lessThanOrEqualTo(root.get("accountExpiryDate"), date);
+        };
+    }
+
+    public static Specification<User> accountNotExpired(boolean check) {
+        return (root, query, cb) -> {
+            if (!check)
+                return null;
+            // Active accounts: Future Date OR Null (Never expires)
+            return cb.or(
+                    cb.greaterThanOrEqualTo(root.get("accountExpiryDate"), LocalDateTime.now()),
+                    cb.isNull(root.get("accountExpiryDate")));
+        };
+    }
+
+    public static Specification<User> isAccountExpired(Boolean isExpired) {
+        return (root, query, cb) -> {
+            if (isExpired == null)
+                return null;
+
+            if (isExpired) {
+                // Return expired accounts: expiryDate < now
+                return cb.lessThan(root.get("accountExpiryDate"), LocalDateTime.now());
+            } else {
+                // Return active accounts: expiryDate >= now OR expiryDate is null
+                return cb.or(
+                        cb.greaterThanOrEqualTo(root.get("accountExpiryDate"), LocalDateTime.now()),
+                        cb.isNull(root.get("accountExpiryDate")));
+            }
         };
     }
 }

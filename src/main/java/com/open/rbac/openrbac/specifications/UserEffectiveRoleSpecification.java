@@ -2,16 +2,42 @@ package com.open.rbac.openrbac.specifications;
 
 import com.open.rbac.openrbac.enums.EntityStatus;
 import com.open.rbac.openrbac.models.UserEffectiveRole;
+import com.open.rbac.openrbac.utils.SpecificationUtils;
 import jakarta.persistence.criteria.JoinType;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 
 public class UserEffectiveRoleSpecification {
 
-    public static Specification<UserEffectiveRole> ofUser(Long userId, Long realmId) {
+    public static Specification<UserEffectiveRole> ofUser(Long userId, String realmIdentifier) {
         return (root, query, cb) -> {
-            if (userId == null || realmId == null) {
+            if (userId == null || realmIdentifier == null || realmIdentifier.trim().isEmpty()) {
+                return null;
+            }
+
+            // Fetch Optimization ONLY for entity queries, NOT for count/exists
+            if (query.getResultType().equals(UserEffectiveRole.class)) {
+                var roleFetch = root.fetch("role", JoinType.LEFT);
+                roleFetch.fetch("createdBy", JoinType.LEFT);
+                root.fetch("user", JoinType.LEFT);
+                root.fetch("sourceGroup", JoinType.LEFT);
+                root.fetch("assignedBy", JoinType.LEFT);
+            }
+
+            Predicate realmPredicate = SpecificationUtils.byIdOrName(cb, root.get("role").get("realm"),
+                    realmIdentifier);
+
+            return cb.and(
+                    cb.equal(root.get("user").get("id"), userId),
+                    realmPredicate);
+        };
+    }
+
+    public static Specification<UserEffectiveRole> ofUser(String keyCloakUserId) {
+        return (root, query, cb) -> {
+            if (keyCloakUserId == null || keyCloakUserId.trim().isEmpty()) {
                 return null;
             }
 
@@ -24,8 +50,7 @@ public class UserEffectiveRoleSpecification {
             }
 
             return cb.and(
-                    cb.equal(root.get("user").get("id"), userId),
-                    cb.equal(root.get("role").get("realm").get("id"), realmId));
+                    cb.equal(root.get("user").get("keycloakUserId"), keyCloakUserId));
         };
     }
 

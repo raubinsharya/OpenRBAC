@@ -27,15 +27,14 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class GroupService {
 
     private final GroupRepository groupRepository;
     private final RealmRepository realmRepository;
     private final UserRepository userRepository;
 
-    @Transactional(readOnly = true)
     public PagedResponse<GroupDTO> getAllGroups(String realmIdentifier, GroupFilterRequest groupFilterRequest) {
+
         Specification<Group> specification = Specification.allOf(GroupSpecification.hasRealm(realmIdentifier))
                 .and(GroupSpecification.searchByNameIgnoreCase(groupFilterRequest.getName()))
                 .and(GroupSpecification.hasStatus(groupFilterRequest.getStatus()))
@@ -97,9 +96,9 @@ public class GroupService {
         return groupRepository.findOne(specification).stream().map(GroupDTO::from).findFirst().orElse(null);
     }
 
-    public GroupDTO getHierarchy(Long realmId, Long groupId) {
+    public GroupDTO getHierarchy(String realmIdentifier, Long groupId) {
         // Fetch specific group, its ancestors, and all its descendants in one query
-        List<Group> hierarchy = groupRepository.findGroupHierarchy(realmId, groupId);
+        List<Group> hierarchy = groupRepository.findGroupHierarchy(realmIdentifier, groupId);
 
         if (hierarchy.isEmpty()) {
             throw new IllegalArgumentException("Group not found");

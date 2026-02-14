@@ -41,7 +41,7 @@ public class GroupController {
 
     @GetMapping("/{id}/hierarchy")
     public ResponseEntity<?> getHierarchy(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long id) {
         return ResponseEntity.ok(groupService.getHierarchy(realmId, id));
     }

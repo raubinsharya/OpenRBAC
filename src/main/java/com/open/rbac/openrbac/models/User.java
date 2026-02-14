@@ -6,7 +6,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import lombok.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -25,8 +27,8 @@ import java.util.List;
         @Index(name = "idx_user_status", columnList = "status"),
         @Index(name = "idx_user_expiry", columnList = "account_expiry_date")
 }, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_realm_email", columnNames = { "realm_id", "email" }),
-        @UniqueConstraint(name = "uk_user_keycloak_id", columnNames = { "keycloak_user_id" })
+        @UniqueConstraint(name = "uk_user_realm_email", columnNames = {"realm_id", "email"}),
+        @UniqueConstraint(name = "uk_user_keycloak_id", columnNames = {"keycloak_user_id"})
 })
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
@@ -112,5 +114,10 @@ public class User {
         } else {
             return email;
         }
+    }
+
+    public boolean isAccountExpired() {
+        if (this.accountExpiryDate == null) return false;
+        return this.accountExpiryDate.isBefore(LocalDateTime.now());
     }
 }

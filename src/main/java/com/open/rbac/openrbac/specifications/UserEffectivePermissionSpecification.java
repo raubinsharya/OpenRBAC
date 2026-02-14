@@ -12,9 +12,9 @@ import java.util.List;
 
 public class UserEffectivePermissionSpecification {
 
-    public static Specification<UserEffectivePermission> ofUser(Long userId, Long realmId) {
+    public static Specification<UserEffectivePermission> ofUser(Long userId, String realmIdentifier) {
         return (root, query, cb) -> {
-            if (userId == null || realmId == null) {
+            if (userId == null || realmIdentifier == null || realmIdentifier.trim().isEmpty()) {
                 return null;
             }
             // Fetch relations to avoid N+1 issues - only for data query, not count query
@@ -31,10 +31,22 @@ public class UserEffectivePermissionSpecification {
             var permissionJoin = root.join("permission", JoinType.INNER);
             var permissionRealmJoin = permissionJoin.join("realm", JoinType.INNER);
 
+            Predicate userRealmPredicate;
+            Predicate permissionRealmPredicate;
+
+            try {
+                var realmId = Long.parseLong(realmIdentifier);
+                userRealmPredicate = cb.equal(userRealmJoin.get("id"), realmId);
+                permissionRealmPredicate = cb.equal(permissionRealmJoin.get("id"), realmId);
+            } catch (Exception e) {
+                userRealmPredicate = cb.equal(userRealmJoin.get("name"), realmIdentifier);
+                permissionRealmPredicate = cb.equal(permissionRealmJoin.get("name"), realmIdentifier);
+            }
+
             return cb.and(
                     cb.equal(userJoin.get("id"), userId),
-                    cb.equal(userRealmJoin.get("id"), realmId),
-                    cb.equal(permissionRealmJoin.get("id"), realmId));
+                    userRealmPredicate,
+                    permissionRealmPredicate);
         };
     }
 

@@ -20,7 +20,7 @@ public class UserRoleController {
 
     @GetMapping
     public ResponseEntity<?> getUserRoles(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @ModelAttribute @Valid UserRoleFilterRequest filter) {
         return ResponseEntity.ok(userRoleService.getUserRoles(realmId, userId, filter));
@@ -28,7 +28,7 @@ public class UserRoleController {
 
     @GetMapping("/check")
     public ResponseEntity<Map<String, Boolean>> checkUserRole(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @RequestParam(required = false) Long roleId,
             @RequestParam(required = false) String roleName) {
@@ -38,7 +38,7 @@ public class UserRoleController {
 
     @PostMapping
     public ResponseEntity<?> addRoles(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @RequestBody @Valid AddUserRolesRequest request) {
         userRoleService.addRolesToUser(realmId, userId, request);
@@ -47,7 +47,7 @@ public class UserRoleController {
 
     @DeleteMapping
     public ResponseEntity<?> removeRoles(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @RequestBody @Valid RemoveUserRolesRequest request) {
         userRoleService.removeRolesFromUser(realmId, userId, request);

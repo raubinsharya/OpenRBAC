@@ -22,7 +22,7 @@ public class UserPermissionController {
 
     @GetMapping
     public ResponseEntity<?> getUserPermissions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @ModelAttribute @Valid UserPermissionFilterRequest filter) {
         return ResponseEntity.ok(userPermissionService.getUserPermissions(realmId, userId, filter));
@@ -30,7 +30,7 @@ public class UserPermissionController {
 
     @GetMapping("/check")
     public ResponseEntity<?> checkPermission(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @ModelAttribute CheckPermissionRequest request) {
         boolean hasPermission = userPermissionService.checkPermission(realmId, userId, request);
@@ -39,7 +39,7 @@ public class UserPermissionController {
 
     @PostMapping
     public ResponseEntity<?> addPermissions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @RequestBody @Valid AddUserPermissionsRequest request) {
         userPermissionService.addPermissionsToUser(realmId, userId, request);
@@ -48,7 +48,7 @@ public class UserPermissionController {
 
     @DeleteMapping
     public ResponseEntity<?> removePermissions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @RequestBody @Valid RemoveUserPermissionsRequest request) {
         userPermissionService.removePermissionsFromUser(realmId, userId, request);
@@ -57,7 +57,7 @@ public class UserPermissionController {
 
     @GetMapping("/resources")
     public ResponseEntity<?> getEffectiveUserResources(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @RequestParam(required = false) String assignmentType,
             Pageable pageable) {
@@ -67,7 +67,7 @@ public class UserPermissionController {
 
     @GetMapping("/actions")
     public ResponseEntity<?> getEffectiveUserActions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @RequestParam(required = false) String assignmentType,
             Pageable pageable) {

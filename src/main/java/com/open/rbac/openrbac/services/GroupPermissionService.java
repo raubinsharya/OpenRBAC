@@ -47,7 +47,7 @@ public class GroupPermissionService {
         public void addPermissionsToGroup(Long realmId, Long groupId, AddGroupPermissionsRequest request) {
                 Group group = groupRepository.findOne(Specification.allOf(
                                 GroupSpecification.hasId(groupId),
-                                GroupSpecification.hasRealm(realmId)))
+                                GroupSpecification.hasRealm(String.valueOf(realmId))))
                                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
                 final List<Permission> validPermissions = permissionRepository
@@ -97,7 +97,7 @@ public class GroupPermissionService {
         public void removePermissionsFromGroup(Long realmId, Long groupId, RemoveGroupPermissionsRequest request) {
                 boolean groupExists = groupRepository.exists(Specification.allOf(
                                 GroupSpecification.hasId(groupId),
-                                GroupSpecification.hasRealm(realmId)));
+                                GroupSpecification.hasRealm(String.valueOf(realmId))));
                 if (!groupExists) {
                         throw new EntityNotFoundException("Group not found");
                 }
@@ -121,7 +121,7 @@ public class GroupPermissionService {
                         GroupPermissionFilterRequest filter) {
                 Group group = groupRepository.findOne(Specification.allOf(
                                 GroupSpecification.hasId(groupId),
-                                GroupSpecification.hasRealm(realmId)))
+                                GroupSpecification.hasRealm(String.valueOf(realmId))))
                                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
                 List<Long> ancestorIds = parseAncestorIds(group.getPath());
@@ -158,7 +158,7 @@ public class GroupPermissionService {
 
                 boolean groupExists = groupRepository.exists(Specification.allOf(
                                 GroupSpecification.hasId(groupId),
-                                GroupSpecification.hasRealm(realmId)));
+                                GroupSpecification.hasRealm(String.valueOf(realmId))));
                 if (!groupExists) {
                         throw new EntityNotFoundException("Group not found");
                 }

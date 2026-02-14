@@ -45,7 +45,7 @@ public class GroupRoleService {
     public void addRolesToGroup(Long realmId, Long groupId, AddGroupRolesRequest request) {
         Group group = groupRepository.findOne(Specification.allOf(
                 GroupSpecification.hasId(groupId),
-                GroupSpecification.hasRealm(realmId)))
+                GroupSpecification.hasRealm(String.valueOf(realmId))))
                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
         final List<Role> validRoles = roleRepository
@@ -94,7 +94,7 @@ public class GroupRoleService {
     public void removeRolesFromGroup(Long realmId, Long groupId, RemoveGroupRolesRequest request) {
         boolean groupExists = groupRepository.exists(Specification.allOf(
                 GroupSpecification.hasId(groupId),
-                GroupSpecification.hasRealm(realmId)));
+                GroupSpecification.hasRealm(String.valueOf(realmId))));
         if (!groupExists) {
             throw new EntityNotFoundException("Group not found");
         }
@@ -115,7 +115,7 @@ public class GroupRoleService {
     public PagedResponse<GroupRoleDTO> getGroupRoles(Long realmId, Long groupId, GroupRoleFilterRequest filter) {
         Group group = groupRepository.findOne(Specification.allOf(
                 GroupSpecification.hasId(groupId),
-                GroupSpecification.hasRealm(realmId)))
+                GroupSpecification.hasRealm(String.valueOf(realmId))))
                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
         List<Long> ancestorIds = parseAncestorIds(group.getPath());
@@ -146,7 +146,7 @@ public class GroupRoleService {
 
         Group group = groupRepository.findOne(Specification.allOf(
                 GroupSpecification.hasId(groupId),
-                GroupSpecification.hasRealm(realmId)))
+                GroupSpecification.hasRealm(String.valueOf(realmId))))
                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
         List<Long> ancestorIds = parseAncestorIds(group.getPath());
