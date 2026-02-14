@@ -9,6 +9,7 @@ import com.open.rbac.openrbac.requests.RemoveGroupMembersRequest;
 import com.open.rbac.openrbac.requests.UpdateGroupMembersExpiryRequest;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.GroupMemberSpecification;
+import com.open.rbac.openrbac.specifications.GroupSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import com.open.rbac.openrbac.repositories.GroupRepository;
@@ -34,8 +35,8 @@ public class UserGroupService {
     private final GroupRepository groupRepository;
     private final UserRepository userRepository;
 
-    public PagedResponse<UserGroupDTO> getGroupMembers(Long realmId, Long id, UserGroupFilterRequest filter) {
-        Specification<UserGroup> spec = GroupMemberSpecification.ofGroup(id, realmId)
+    public PagedResponse<UserGroupDTO> getGroupMembers(String realmIdentifier, Long id, UserGroupFilterRequest filter) {
+        Specification<UserGroup> spec = GroupMemberSpecification.ofGroup(id, realmIdentifier)
                 .and(BaseSpecification.withBaseFilters(filter))
                 .and(GroupMemberSpecification.isNotExpired())
                 .and(GroupMemberSpecification.hasKeycloakUserId(filter.getKeycloakUserId()))
@@ -55,9 +56,13 @@ public class UserGroupService {
     }
 
     @Transactional
-    public List<UserGroupDTO> addMembersToGroup(Long realmId, Long groupId, AddGroupMembersRequest request) {
-        Group group = groupRepository.findByIdAndRealm_Id(groupId, realmId)
+    public List<UserGroupDTO> addMembersToGroup(String realmIdentifier, Long groupId, AddGroupMembersRequest request) {
+        Group group = groupRepository.findOne(Specification.allOf(
+                GroupSpecification.hasId(groupId),
+                GroupSpecification.hasRealm(realmIdentifier)))
                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
+
+        Long realmId = group.getRealm().getId();
 
         List<User> users = userRepository.findAllByIdInAndRealm_Id(request.getUserId(), realmId).orElse(List.of());
         var requestedUserIds = users.stream().map(User::getId).toList();
@@ -97,8 +102,12 @@ public class UserGroupService {
     }
 
     @Transactional
-    public void removeMembersFromGroup(Long realmId, Long groupId, RemoveGroupMembersRequest request) {
-        if (!groupRepository.existsByIdAndRealm_Id(groupId, realmId)) {
+    public void removeMembersFromGroup(String realmIdentifier, Long groupId, RemoveGroupMembersRequest request) {
+        boolean groupExists = groupRepository.exists(Specification.allOf(
+                GroupSpecification.hasId(groupId),
+                GroupSpecification.hasRealm(realmIdentifier)));
+
+        if (!groupExists) {
             throw new EntityNotFoundException("Group not found");
         }
 
@@ -114,8 +123,12 @@ public class UserGroupService {
     }
 
     @Transactional
-    public void updateMembersExpiry(Long realmId, Long groupId, UpdateGroupMembersExpiryRequest request) {
-        if (!groupRepository.existsByIdAndRealm_Id(groupId, realmId)) {
+    public void updateMembersExpiry(String realmIdentifier, Long groupId, UpdateGroupMembersExpiryRequest request) {
+        boolean groupExists = groupRepository.exists(Specification.allOf(
+                GroupSpecification.hasId(groupId),
+                GroupSpecification.hasRealm(realmIdentifier)));
+
+        if (!groupExists) {
             throw new EntityNotFoundException("Group not found");
         }
         var userGroups = userGroupRepository.findAllByIdIn(request.getGroupMemberIds());
@@ -128,7 +141,17 @@ public class UserGroupService {
         userGroupRepository.updateExpiryDate(groupId, request.getGroupMemberIds(), request.getExpiryDate());
     }
 
-    public boolean checkUserGroupMembership(Long realmId, Long groupId, Long userId) {
+    public boolean checkUserGroupMembership(String realmIdentifier, Long groupId, Long userId) {
+        Group group = groupRepository.findOne(Specification.allOf(
+                GroupSpecification.hasId(groupId),
+                GroupSpecification.hasRealm(realmIdentifier)))
+                .orElse(null);
+
+        if (group == null) {
+            return false;
+        }
+        Long realmId = group.getRealm().getId();
+
         return userGroupRepository.existsByUserIdAndGroup_IdAndGroup_Realm_IdAndUser_Realm_Id(userId, groupId, realmId,
                 realmId);
     }

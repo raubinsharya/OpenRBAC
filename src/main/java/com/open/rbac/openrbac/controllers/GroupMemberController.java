@@ -19,21 +19,21 @@ public class GroupMemberController {
     private final UserGroupService userGroupService;
 
     @GetMapping("/members")
-    public ResponseEntity<?> getGroupMembers(@PathVariable Long realmId,
+    public ResponseEntity<?> getGroupMembers(@PathVariable String realmId,
             @PathVariable Long id,
             @ModelAttribute @Valid UserGroupFilterRequest userGroupFilterRequest) {
         return ResponseEntity.ok(userGroupService.getGroupMembers(realmId, id, userGroupFilterRequest));
     }
 
     @PostMapping("/members")
-    public ResponseEntity<?> addMembers(@PathVariable Long realmId,
+    public ResponseEntity<?> addMembers(@PathVariable String realmId,
             @PathVariable Long id,
             @Valid @RequestBody AddGroupMembersRequest request) {
         return ResponseEntity.ok(userGroupService.addMembersToGroup(realmId, id, request));
     }
 
     @DeleteMapping("/members")
-    public ResponseEntity<?> removeMembers(@PathVariable Long realmId,
+    public ResponseEntity<?> removeMembers(@PathVariable String realmId,
             @PathVariable Long id,
             @Valid @RequestBody com.open.rbac.openrbac.requests.RemoveGroupMembersRequest request) {
         userGroupService.removeMembersFromGroup(realmId, id, request);
@@ -41,7 +41,7 @@ public class GroupMemberController {
     }
 
     @PatchMapping("/members")
-    public ResponseEntity<?> updateMemberExpiry(@PathVariable Long realmId,
+    public ResponseEntity<?> updateMemberExpiry(@PathVariable String realmId,
             @PathVariable Long id,
             @Valid @RequestBody com.open.rbac.openrbac.requests.UpdateGroupMembersExpiryRequest request) {
         userGroupService.updateMembersExpiry(realmId, id, request);
@@ -49,7 +49,7 @@ public class GroupMemberController {
     }
 
     @GetMapping("/members/{userId}/check")
-    public ResponseEntity<Map<String, Boolean>> checkGroupMember(@PathVariable Long realmId,
+    public ResponseEntity<Map<String, Boolean>> checkGroupMember(@PathVariable String realmId,
             @PathVariable Long id,
             @PathVariable Long userId) {
         return ResponseEntity.ok(Map.of("isMember",
