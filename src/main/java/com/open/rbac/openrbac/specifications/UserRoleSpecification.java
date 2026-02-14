@@ -12,27 +12,30 @@ import java.util.List;
 
 public class UserRoleSpecification {
 
+    @SuppressWarnings("unchecked")
     public static Specification<UserRole> ofUser(Long userId, Long realmId) {
         return (root, query, cb) -> {
             if (userId == null || realmId == null) {
                 return null;
             }
-            var userJoin = root.join("user", JoinType.INNER);
+
+            // Determine if valid content query for fetching
+            boolean isContentQuery = query != null && UserRole.class.equals(query.getResultType());
+
+            jakarta.persistence.criteria.Join<Object, Object> userJoin;
+            jakarta.persistence.criteria.Join<Object, Object> roleJoin;
+
+            if (isContentQuery) {
+                userJoin = (jakarta.persistence.criteria.Join<Object, Object>) root.fetch("user", JoinType.INNER);
+                roleJoin = (jakarta.persistence.criteria.Join<Object, Object>) root.fetch("role", JoinType.INNER);
+                root.fetch("assignedBy", JoinType.LEFT);
+            } else {
+                userJoin = root.join("user", JoinType.INNER);
+                roleJoin = root.join("role", JoinType.INNER);
+            }
+
             var userRealmJoin = userJoin.join("realm", JoinType.INNER);
-
-            // Check realm consistency via user or role? Usually user is in realm, role is
-            // in realm.
-            // RolePermissionSpec checks role.realm and permission.realm.
-            // Here we check user.realm. We could also check role.realm.
-
-            // Allow roles from SAME realm.
-            var roleJoin = root.join("role", JoinType.INNER);
             var roleRealmJoin = roleJoin.join("realm", JoinType.INNER);
-
-            // Fetch relations
-            root.fetch("user", JoinType.INNER);
-            root.fetch("role", JoinType.INNER);
-            root.fetch("assignedBy", JoinType.LEFT);
 
             return cb.and(
                     cb.equal(userJoin.get("id"), userId),
