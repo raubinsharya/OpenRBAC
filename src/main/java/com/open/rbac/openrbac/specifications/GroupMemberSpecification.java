@@ -26,6 +26,10 @@ public class GroupMemberSpecification {
             jakarta.persistence.criteria.Join<Object, Object> groupJoin;
             jakarta.persistence.criteria.Join<Object, Object> userJoin;
 
+            if (query != null) {
+                query.distinct(true);
+            }
+
             if (isContentQuery) {
                 groupJoin = (jakarta.persistence.criteria.Join<Object, Object>) root.fetch("group", JoinType.INNER);
                 userJoin = (jakarta.persistence.criteria.Join<Object, Object>) root.fetch("user", JoinType.INNER);

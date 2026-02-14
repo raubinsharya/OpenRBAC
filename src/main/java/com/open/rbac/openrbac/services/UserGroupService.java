@@ -79,9 +79,9 @@ public class UserGroupService {
 
         // Get current user (assignedBy)
         final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
-            String username = jwt.getClaimAsString("preferred_username");
-            if (username != null) {
-                return userRepository.findByUsername(username).orElse(null);
+            String keycloakUserId = jwt.getSubject();
+            if (keycloakUserId != null) {
+                return userRepository.findByKeycloakUserId(keycloakUserId).orElse(null);
             }
             return null;
         });
