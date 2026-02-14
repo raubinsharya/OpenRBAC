@@ -36,14 +36,14 @@ public class PermissionController {
     }
 
     @GetMapping("/resources")
-    public ResponseEntity<?> getResources(@PathVariable Long realmId,
+    public ResponseEntity<?> getResources(@PathVariable String realmId,
             @ModelAttribute ResourceFilterRequest resourceFilterRequest) {
         var resources = permissionService.getResources(realmId, resourceFilterRequest);
         return ResponseEntity.ok(resources);
     }
 
     @GetMapping("/actions")
-    public ResponseEntity<?> getActions(@PathVariable Long realmId,
+    public ResponseEntity<?> getActions(@PathVariable String realmId,
             @ModelAttribute ResourceFilterRequest resourceFilterRequest) {
         var actions = permissionService.getActions(realmId, resourceFilterRequest);
         return ResponseEntity.ok(actions);

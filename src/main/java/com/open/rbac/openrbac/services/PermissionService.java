@@ -16,6 +16,7 @@ import com.open.rbac.openrbac.specifications.PermissionSpecification;
 import jakarta.validation.Valid;
 import com.open.rbac.openrbac.models.User;
 import com.open.rbac.openrbac.repositories.UserRepository;
+import com.open.rbac.openrbac.utils.ParsingUtils;
 import com.open.rbac.openrbac.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
@@ -164,18 +165,22 @@ public class PermissionService {
                 return saved.stream().map(PermissionDTO::from).collect(Collectors.toCollection(ArrayList::new));
         }
 
-        public PagedResponse<String> getResources(Long realmId, ResourceFilterRequest resourceFilterRequest) {
+        public PagedResponse<String> getResources(String realmIdentifier, ResourceFilterRequest resourceFilterRequest) {
                 resourceFilterRequest.setSortBy("resource");
+                Long realmId = ParsingUtils.safeParseLong(realmIdentifier);
                 var resources = permissionRepository.findDistinctResources(
                                 realmId,
+                                realmIdentifier,
                                 resourceFilterRequest.toPageable());
                 return PagedResponse.fromPage(resources, String::valueOf);
         }
 
-        public PagedResponse<String> getActions(Long realmId, ResourceFilterRequest resourceFilterRequest) {
+        public PagedResponse<String> getActions(String realmIdentifier, ResourceFilterRequest resourceFilterRequest) {
                 resourceFilterRequest.setSortBy("action");
+                Long realmId = ParsingUtils.safeParseLong(realmIdentifier);
                 var resources = permissionRepository.findDistinctActions(
                                 realmId,
+                                realmIdentifier,
                                 resourceFilterRequest.toPageable());
                 return PagedResponse.fromPage(resources, String::valueOf);
         }
