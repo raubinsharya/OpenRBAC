@@ -19,7 +19,10 @@ public interface GroupRoleRepository extends JpaRepository<GroupRole, Long>, Jpa
 
     void deleteByGroupIdAndRoleId(Long groupId, Long roleId);
 
-    void deleteByGroupIdAndRoleIdIn(Long groupId, Collection<Long> roleIds);
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM GroupRole gr WHERE gr.group.id = :groupId AND gr.role.id IN :roleIds")
+    void deleteByGroupIdAndRoleIdIn(@org.springframework.data.repository.query.Param("groupId") Long groupId,
+            @org.springframework.data.repository.query.Param("roleIds") Collection<Long> roleIds);
 
     void deleteBySourceGroupIdAndRoleIdIn(Long sourceGroupId, Collection<Long> roleIds);
 

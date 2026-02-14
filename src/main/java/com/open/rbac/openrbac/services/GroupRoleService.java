@@ -105,10 +105,7 @@ public class GroupRoleService {
             throw new EntityNotFoundException("Roles are not assigned to this group: " + request.getRoleIds());
         }
 
-        // Potential issue: Deleting inherited roles? For now assume valid deletion of
-        // Fetch and delete entities to ensure proper lifecycle handling
-        List<GroupRole> rolesToDelete = groupRoleRepository.findByGroupIdAndRoleIdIn(groupId, existingRoleIds);
-        groupRoleRepository.deleteAll(rolesToDelete);
+        groupRoleRepository.deleteByGroupIdAndRoleIdIn(groupId, existingRoleIds);
     }
 
     @Transactional(readOnly = true)

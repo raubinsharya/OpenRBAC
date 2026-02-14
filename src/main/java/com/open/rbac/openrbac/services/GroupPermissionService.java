@@ -112,10 +112,7 @@ public class GroupPermissionService {
                                         "Permissions are not assigned to this group: " + request.getPermissionIds());
                 }
 
-                List<GroupPermission> permissionsToDelete = groupPermissionRepository.findByGroupIdAndPermissionIdIn(
-                                groupId,
-                                existingPermissionIds);
-                groupPermissionRepository.deleteAll(permissionsToDelete);
+                groupPermissionRepository.deleteByGroupIdAndPermissionIdIn(groupId, existingPermissionIds);
         }
 
         @Transactional(readOnly = true)
