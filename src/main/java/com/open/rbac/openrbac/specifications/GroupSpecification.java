@@ -1,6 +1,8 @@
 package com.open.rbac.openrbac.specifications;
 
 import com.open.rbac.openrbac.models.Group;
+import com.open.rbac.openrbac.utils.ParsingUtils;
+
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -28,13 +30,11 @@ public class GroupSpecification {
         return (root, query, cb) -> {
             if (realmIdentifier == null || realmIdentifier.trim().isEmpty())
                 return null;
-            try {
-                Long id = Long.parseLong(realmIdentifier);
+            Long id = ParsingUtils.safeParseLong(realmIdentifier);
+            if (id != null) {
                 return cb.equal(root.get("realm").get("id"), id);
-            } catch (NumberFormatException e) {
-                Predicate namePredicate = cb.equal(root.get("realm").get("name"), realmIdentifier);
-                Predicate realmIdPredicate = cb.equal(root.get("realm").get("realmId"), realmIdentifier);
-                return cb.or(namePredicate, realmIdPredicate);
+            } else {
+                return cb.equal(root.get("realm").get("name"), realmIdentifier);
             }
         };
     }

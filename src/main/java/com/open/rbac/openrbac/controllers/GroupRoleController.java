@@ -20,7 +20,7 @@ public class GroupRoleController {
 
     @GetMapping
     public ResponseEntity<?> getGroupRoles(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long groupId,
             @ModelAttribute @Valid GroupRoleFilterRequest filter) {
         return ResponseEntity.ok(groupRoleService.getGroupRoles(realmId, groupId, filter));
@@ -28,7 +28,7 @@ public class GroupRoleController {
 
     @GetMapping("/check")
     public ResponseEntity<Map<String, Boolean>> checkGroupRole(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long groupId,
             @RequestParam(required = false) Long roleId,
             @RequestParam(required = false) String roleName) {
@@ -38,7 +38,7 @@ public class GroupRoleController {
 
     @PostMapping
     public ResponseEntity<?> addRoles(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long groupId,
             @RequestBody @Valid AddGroupRolesRequest request) {
         groupRoleService.addRolesToGroup(realmId, groupId, request);
@@ -47,7 +47,7 @@ public class GroupRoleController {
 
     @DeleteMapping
     public ResponseEntity<?> removeRoles(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long groupId,
             @RequestBody @Valid RemoveGroupRolesRequest request) {
         groupRoleService.removeRolesFromGroup(realmId, groupId, request);

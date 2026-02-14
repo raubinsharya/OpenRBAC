@@ -42,14 +42,14 @@ public class GroupRoleService {
 
     @Transactional
     @RequireAnyRole(value = { "realm-admin", "group-admin" })
-    public void addRolesToGroup(Long realmId, Long groupId, AddGroupRolesRequest request) {
+    public void addRolesToGroup(String realmIdentifier, Long groupId, AddGroupRolesRequest request) {
         Group group = groupRepository.findOne(Specification.allOf(
                 GroupSpecification.hasId(groupId),
-                GroupSpecification.hasRealm(String.valueOf(realmId))))
+                GroupSpecification.hasRealm(realmIdentifier)))
                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
         final List<Role> validRoles = roleRepository
-                .findAllByIdInAndRealm_Id(Objects.requireNonNull(request.getRoleIds()), realmId);
+                .findAllByIdInAndRealm_Id(Objects.requireNonNull(request.getRoleIds()), group.getRealm().getId());
 
         List<Long> validRoleIds = validRoles.stream().map(Role::getId).toList();
         List<Long> notFoundRoleIds = request.getRoleIds().stream()
@@ -91,10 +91,10 @@ public class GroupRoleService {
 
     @Transactional
     @RequireAnyRole(value = { "realm-admin", "group-admin" })
-    public void removeRolesFromGroup(Long realmId, Long groupId, RemoveGroupRolesRequest request) {
+    public void removeRolesFromGroup(String realmIdentifier, Long groupId, RemoveGroupRolesRequest request) {
         boolean groupExists = groupRepository.exists(Specification.allOf(
                 GroupSpecification.hasId(groupId),
-                GroupSpecification.hasRealm(String.valueOf(realmId))));
+                GroupSpecification.hasRealm(realmIdentifier)));
         if (!groupExists) {
             throw new EntityNotFoundException("Group not found");
         }
@@ -112,16 +112,17 @@ public class GroupRoleService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<GroupRoleDTO> getGroupRoles(Long realmId, Long groupId, GroupRoleFilterRequest filter) {
+    public PagedResponse<GroupRoleDTO> getGroupRoles(String realmIdentifier, Long groupId,
+            GroupRoleFilterRequest filter) {
         Group group = groupRepository.findOne(Specification.allOf(
                 GroupSpecification.hasId(groupId),
-                GroupSpecification.hasRealm(String.valueOf(realmId))))
+                GroupSpecification.hasRealm(realmIdentifier)))
                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
         List<Long> ancestorIds = parseAncestorIds(group.getPath());
 
         Specification<GroupRole> spec = Specification.allOf(
-                GroupRoleSpecification.ofGroup(groupId, ancestorIds, group.getLevel(), realmId),
+                GroupRoleSpecification.ofGroup(groupId, ancestorIds, group.getLevel(), group.getRealm().getId()),
                 GroupRoleSpecification.isNotExpired(),
                 GroupRoleSpecification.hasRoleName(filter.getRoleName()),
                 GroupRoleSpecification.hasRoleStatus(filter.getRoleStatus()),
@@ -139,28 +140,24 @@ public class GroupRoleService {
     }
 
     @Transactional(readOnly = true)
-    public boolean hasRole(Long realmId, Long groupId, Long roleId, String roleName) {
+    public boolean hasRole(String realmIdentifier, Long groupId, Long roleId, String roleName) {
         if (roleId == null && (roleName == null || roleName.isEmpty())) {
             throw new IllegalArgumentException("Either roleId or roleName must be provided");
         }
 
         Group group = groupRepository.findOne(Specification.allOf(
                 GroupSpecification.hasId(groupId),
-                GroupSpecification.hasRealm(String.valueOf(realmId))))
+                GroupSpecification.hasRealm(realmIdentifier)))
                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
         List<Long> ancestorIds = parseAncestorIds(group.getPath());
 
         Specification<GroupRole> spec = Specification.allOf(
-                GroupRoleSpecification.ofGroup(groupId, ancestorIds, group.getLevel(), realmId),
+                GroupRoleSpecification.ofGroup(groupId, ancestorIds, group.getLevel(), group.getRealm().getId()),
                 GroupRoleSpecification.isNotExpired(),
-                GroupRoleSpecification.isActive(true));
-
-        if (roleId != null) {
-            spec = spec.and(GroupRoleSpecification.hasRoleId(roleId));
-        } else {
-            spec = spec.and(GroupRoleSpecification.hasRoleName(roleName));
-        }
+                GroupRoleSpecification.isActive(true),
+                GroupRoleSpecification.hasRoleId(roleId),
+                GroupRoleSpecification.hasRoleName(roleName));
 
         return groupRoleRepository.exists(spec);
     }
