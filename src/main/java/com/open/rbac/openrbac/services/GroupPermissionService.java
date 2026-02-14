@@ -44,14 +44,15 @@ public class GroupPermissionService {
 
         @Transactional
         @RequireAnyRole(value = { "realm-admin", "group-admin" })
-        public void addPermissionsToGroup(Long realmId, Long groupId, AddGroupPermissionsRequest request) {
+        public void addPermissionsToGroup(String realmIdentifier, Long groupId, AddGroupPermissionsRequest request) {
                 Group group = groupRepository.findOne(Specification.allOf(
                                 GroupSpecification.hasId(groupId),
-                                GroupSpecification.hasRealm(String.valueOf(realmId))))
+                                GroupSpecification.hasRealm(realmIdentifier)))
                                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
                 final List<Permission> validPermissions = permissionRepository
-                                .findAllByIdInAndRealm_Id(Objects.requireNonNull(request.getPermissionIds()), realmId);
+                                .findAllByIdInAndRealm_Id(Objects.requireNonNull(request.getPermissionIds()),
+                                                group.getRealm().getId());
 
                 List<Long> validPermissionIds = validPermissions.stream().map(Permission::getId).toList();
                 List<Long> notFoundPermissionIds = request.getPermissionIds().stream()
@@ -94,10 +95,11 @@ public class GroupPermissionService {
 
         @Transactional
         @RequireAnyRole(value = { "realm-admin", "group-admin" })
-        public void removePermissionsFromGroup(Long realmId, Long groupId, RemoveGroupPermissionsRequest request) {
+        public void removePermissionsFromGroup(String realmIdentifier, Long groupId,
+                        RemoveGroupPermissionsRequest request) {
                 boolean groupExists = groupRepository.exists(Specification.allOf(
                                 GroupSpecification.hasId(groupId),
-                                GroupSpecification.hasRealm(String.valueOf(realmId))));
+                                GroupSpecification.hasRealm(realmIdentifier)));
                 if (!groupExists) {
                         throw new EntityNotFoundException("Group not found");
                 }
@@ -117,18 +119,18 @@ public class GroupPermissionService {
         }
 
         @Transactional(readOnly = true)
-        public PagedResponse<GroupPermissionDTO> getGroupPermissions(Long realmId, Long groupId,
+        public PagedResponse<GroupPermissionDTO> getGroupPermissions(String realmIdentifier, Long groupId,
                         GroupPermissionFilterRequest filter) {
                 Group group = groupRepository.findOne(Specification.allOf(
                                 GroupSpecification.hasId(groupId),
-                                GroupSpecification.hasRealm(String.valueOf(realmId))))
+                                GroupSpecification.hasRealm(realmIdentifier)))
                                 .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
                 List<Long> ancestorIds = parseAncestorIds(group.getPath());
 
                 Specification<GroupEffectivePermission> spec = Specification.allOf(
                                 GroupEffectivePermissionSpecification.ofGroup(groupId, ancestorIds, group.getLevel(),
-                                                realmId),
+                                                group.getRealm().getId()),
                                 GroupEffectivePermissionSpecification.isNotExpired(),
                                 GroupEffectivePermissionSpecification.hasPermissionName(filter.getPermissionName()),
                                 GroupEffectivePermissionSpecification.hasPermissionStatus(filter.getPermissionStatus()),
@@ -147,7 +149,7 @@ public class GroupPermissionService {
         }
 
         @Transactional(readOnly = true)
-        public boolean hasPermission(Long realmId, Long groupId, Long permissionId, String permissionName,
+        public boolean hasPermission(String realmIdentifier, Long groupId, Long permissionId, String permissionName,
                         String resource,
                         String action) {
                 if (permissionId == null && (permissionName == null || permissionName.isEmpty())
@@ -156,19 +158,16 @@ public class GroupPermissionService {
                                         "Either permissionId, permissionName, or resource/action must be provided");
                 }
 
-                boolean groupExists = groupRepository.exists(Specification.allOf(
+                Group group = groupRepository.findOne(Specification.allOf(
                                 GroupSpecification.hasId(groupId),
-                                GroupSpecification.hasRealm(String.valueOf(realmId))));
-                if (!groupExists) {
-                        throw new EntityNotFoundException("Group not found");
-                }
+                                GroupSpecification.hasRealm(realmIdentifier)))
+                                .orElseThrow(() -> new EntityNotFoundException("Group not found"));
 
-                Group group = groupRepository.findById(groupId).orElseThrow();
                 List<Long> ancestorIds = parseAncestorIds(group.getPath());
 
                 Specification<GroupEffectivePermission> spec = Specification.allOf(
                                 GroupEffectivePermissionSpecification.ofGroup(groupId, ancestorIds, group.getLevel(),
-                                                realmId),
+                                                group.getRealm().getId()),
                                 GroupEffectivePermissionSpecification.isNotExpired(),
                                 GroupEffectivePermissionSpecification.isActive(true));
 

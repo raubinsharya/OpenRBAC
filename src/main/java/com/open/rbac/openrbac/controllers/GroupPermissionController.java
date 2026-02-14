@@ -23,7 +23,7 @@ public class GroupPermissionController {
 
     @PostMapping
     public ResponseEntity<?> addPermissions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long groupId,
             @Valid @RequestBody AddGroupPermissionsRequest request) {
         groupPermissionService.addPermissionsToGroup(realmId, groupId, request);
@@ -32,7 +32,7 @@ public class GroupPermissionController {
 
     @DeleteMapping
     public ResponseEntity<?> removePermissions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long groupId,
             @Valid @RequestBody RemoveGroupPermissionsRequest request) {
         groupPermissionService.removePermissionsFromGroup(realmId, groupId, request);
@@ -41,7 +41,7 @@ public class GroupPermissionController {
 
     @GetMapping
     public ResponseEntity<?> getGroupPermissions(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long groupId,
             @ModelAttribute @Valid GroupPermissionFilterRequest filter) {
         return ResponseEntity.ok(groupPermissionService.getGroupPermissions(realmId, groupId, filter));
@@ -49,7 +49,7 @@ public class GroupPermissionController {
 
     @GetMapping("/check")
     public ResponseEntity<Map<String, Boolean>> checkGroupPermission(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long groupId,
             @RequestParam(required = false) Long permissionId,
             @RequestParam(required = false) String permissionName,

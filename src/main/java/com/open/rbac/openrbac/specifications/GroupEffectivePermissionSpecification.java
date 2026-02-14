@@ -7,12 +7,15 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
+import jakarta.persistence.criteria.Fetch;
+import jakarta.persistence.criteria.Join;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public class GroupEffectivePermissionSpecification {
 
+    @SuppressWarnings("unchecked")
     public static Specification<GroupEffectivePermission> ofGroup(Long groupId, Collection<Long> ancestorIds,
             Integer groupLevel, Long realmId) {
         return (root, query, cb) -> {
@@ -20,9 +23,27 @@ public class GroupEffectivePermissionSpecification {
                 return null;
             }
 
-            var groupJoin = root.join("group", JoinType.INNER);
+            // Determine if valid content query for fetching
+            boolean isContentQuery = query != null && GroupEffectivePermission.class.equals(query.getResultType());
+
+            Join<Object, Object> groupJoin;
+            Join<Object, Object> permissionJoin;
+
+            if (isContentQuery) {
+                Fetch<Object, Object> groupFetch = root.fetch("group", JoinType.INNER);
+                groupJoin = (Join<Object, Object>) groupFetch;
+
+                Fetch<Object, Object> permissionFetch = root.fetch("permission", JoinType.INNER);
+                permissionFetch.fetch("createdBy", JoinType.LEFT);
+                permissionJoin = (Join<Object, Object>) permissionFetch;
+
+                root.fetch("assignedBy", JoinType.LEFT);
+            } else {
+                groupJoin = root.join("group", JoinType.INNER);
+                permissionJoin = root.join("permission", JoinType.INNER);
+            }
+
             var groupRealmJoin = groupJoin.join("realm", JoinType.INNER);
-            var permissionJoin = root.join("permission", JoinType.INNER);
             var permissionRealmJoin = permissionJoin.join("realm", JoinType.INNER);
 
             // Direct assignment (or Role via Group) to the requested group
