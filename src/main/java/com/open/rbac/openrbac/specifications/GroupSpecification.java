@@ -99,4 +99,48 @@ public class GroupSpecification {
             return cb.like(cb.lower(root.get("createdBy").get("username")), "%" + createdBy.toLowerCase() + "%");
         };
     }
+
+    public static Specification<Group> hasPath(String path) {
+        return (root, query, cb) -> {
+            if (path == null || path.trim().isEmpty())
+                return null;
+            return cb.equal(root.get("path"), path);
+        };
+    }
+
+    public static Specification<Group> hasPathPrefix(String pathPrefix) {
+        return (root, query, cb) -> {
+            if (pathPrefix == null || pathPrefix.trim().isEmpty())
+                return null;
+            return cb.like(root.get("path"), pathPrefix + "%");
+        };
+    }
+
+    public static Specification<Group> hasLevel(Integer level) {
+        return (root, query, cb) -> {
+            if (level == null)
+                return null;
+            return cb.equal(root.get("level"), level);
+        };
+    }
+
+    public static Specification<Group> isRoot(Boolean isRoot) {
+        return (root, query, cb) -> {
+            if (isRoot == null)
+                return null;
+            if (isRoot) {
+                return cb.isNull(root.get("parentGroup"));
+            } else {
+                return cb.isNotNull(root.get("parentGroup"));
+            }
+        };
+    }
+
+    public static Specification<Group> hasParentGroup(Long parentGroupId) {
+        return (root, query, cb) -> {
+            if (parentGroupId == null)
+                return null;
+            return cb.equal(root.get("parentGroup").get("id"), parentGroupId);
+        };
+    }
 }

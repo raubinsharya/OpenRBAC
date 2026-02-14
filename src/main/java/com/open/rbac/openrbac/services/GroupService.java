@@ -39,6 +39,11 @@ public class GroupService {
                 .and(GroupSpecification.searchByNameIgnoreCase(groupFilterRequest.getName()))
                 .and(GroupSpecification.hasStatus(groupFilterRequest.getStatus()))
                 .and(GroupSpecification.hasCreatedBy(groupFilterRequest.getCreatedBy()))
+                .and(GroupSpecification.hasPath(groupFilterRequest.getPath()))
+                .and(GroupSpecification.hasPathPrefix(groupFilterRequest.getPathPrefix()))
+                .and(GroupSpecification.hasLevel(groupFilterRequest.getLevel()))
+                .and(GroupSpecification.isRoot(groupFilterRequest.getIsRoot()))
+                .and(GroupSpecification.hasParentGroup(groupFilterRequest.getParentGroupId()))
                 .and(BaseSpecification.withBaseFilters(groupFilterRequest))
                 .and(GroupSpecification.fetchWithCreatedBy());
 

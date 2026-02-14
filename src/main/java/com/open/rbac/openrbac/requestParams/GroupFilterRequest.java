@@ -17,4 +17,9 @@ public class GroupFilterRequest extends BaseFilter {
     private String description;
     private String status;
     private String createdBy;
+    private String path;
+    private String pathPrefix; // For descendants lookup
+    private Integer level;
+    private Boolean isRoot;
+    private Long parentGroupId;
 }
