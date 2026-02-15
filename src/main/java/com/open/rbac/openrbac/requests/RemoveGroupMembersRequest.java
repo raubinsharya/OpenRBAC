@@ -9,5 +9,5 @@ import lombok.Data;
 public class RemoveGroupMembersRequest {
 
     @NotEmpty(message = "User IDs cannot be empty")
-    private List<Long> userId;
+    private List<Long> userIds;
 }

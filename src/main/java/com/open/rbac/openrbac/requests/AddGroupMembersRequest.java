@@ -13,7 +13,7 @@ import lombok.Data;
 public class AddGroupMembersRequest {
 
     @NotEmpty(message = "User IDs cannot be empty")
-    private List<Long> userId;
+    private List<Long> userIds;
 
     @FlexibleDate(strategy = DateStrategy.END_OF_DAY)
     private LocalDateTime expiryDate;

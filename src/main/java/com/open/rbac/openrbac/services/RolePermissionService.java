@@ -120,8 +120,7 @@ public class RolePermissionService {
                 RolePermissionSpecification.assignedBy(filter.getAssignedBy()),
                 RolePermissionSpecification.hasRoleStatus(filter.getRoleStatus()),
                 RolePermissionSpecification.assignedAtBefore(filter.getAssignedAtBefore()),
-                RolePermissionSpecification.assignedAtAfter(filter.getAssignedAtAfter()),
-                RolePermissionSpecification.isNotExpired());
+                RolePermissionSpecification.assignedAtAfter(filter.getAssignedAtAfter()));
 
         return PagedResponse.fromPage(rolePermissionRepository.findAll(spec, filter.toPageable()),
                 RolePermissionDTO::from);

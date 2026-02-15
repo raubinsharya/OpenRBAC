@@ -38,7 +38,6 @@ public class UserGroupService {
     public PagedResponse<UserGroupDTO> getGroupMembers(String realmIdentifier, Long id, UserGroupFilterRequest filter) {
         Specification<UserGroup> spec = GroupMemberSpecification.ofGroup(id, realmIdentifier)
                 .and(BaseSpecification.withBaseFilters(filter))
-                .and(GroupMemberSpecification.isNotExpired())
                 .and(GroupMemberSpecification.hasKeycloakUserId(filter.getKeycloakUserId()))
                 .and(GroupMemberSpecification.hasDisplayName(filter.getDisplayName()))
                 .and(GroupMemberSpecification.hasEmail(filter.getEmail()))
@@ -64,10 +63,10 @@ public class UserGroupService {
 
         Long realmId = group.getRealm().getId();
 
-        List<User> users = userRepository.findAllByIdInAndRealm_Id(request.getUserId(), realmId).orElse(List.of());
+        List<User> users = userRepository.findAllByIdInAndRealm_Id(request.getUserIds(), realmId).orElse(List.of());
         var requestedUserIds = users.stream().map(User::getId).toList();
-        if (users.size() != request.getUserId().size()) {
-            var notFoundUsers = request.getUserId().stream().filter(userId -> !requestedUserIds.contains(userId))
+        if (users.size() != request.getUserIds().size()) {
+            var notFoundUsers = request.getUserIds().stream().filter(userId -> !requestedUserIds.contains(userId))
                     .toList();
             throw new EntityNotFoundException("User with ids " + notFoundUsers + " not found");
         }
@@ -111,15 +110,15 @@ public class UserGroupService {
             throw new EntityNotFoundException("Group not found");
         }
 
-        List<Long> actualMemberIds = userGroupRepository.findExistingMemberIds(groupId, request.getUserId());
-        if (actualMemberIds.size() != request.getUserId().size()) {
-            List<Long> notFoundMembers = request.getUserId().stream()
+        List<Long> actualMemberIds = userGroupRepository.findExistingMemberIds(groupId, request.getUserIds());
+        if (actualMemberIds.size() != request.getUserIds().size()) {
+            List<Long> notFoundMembers = request.getUserIds().stream()
                     .filter(id -> !actualMemberIds.contains(id))
                     .toList();
             throw new EntityNotFoundException("Following users are not members of this group: " + notFoundMembers);
         }
 
-        userGroupRepository.removeMembers(groupId, request.getUserId());
+        userGroupRepository.removeMembers(groupId, request.getUserIds());
     }
 
     @Transactional

@@ -38,12 +38,12 @@ public class UserRoleService {
     private final UserEffectiveRoleRepository userEffectiveRoleRepository;
 
     @Transactional
-//    @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    // @RequireAnyRole(value = {"realm-admin", "group-admin"})
     public void addRolesToUser(String realmIdentifier, Long userId, AddUserRolesRequest request) {
         User user = userRepository.findOne(
-                        Specification.allOf(
-                                UserSpecification.hasUserId(userId, realmIdentifier),
-                                UserSpecification.includeRealm(true)))
+                Specification.allOf(
+                        UserSpecification.hasUserId(userId, realmIdentifier),
+                        UserSpecification.includeRealm(true)))
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         final List<Role> validRoles = roleRepository
@@ -85,7 +85,7 @@ public class UserRoleService {
     }
 
     @Transactional
-//    @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    // @RequireAnyRole(value = {"realm-admin", "group-admin"})
     public void removeRolesFromUser(String realmId, Long userId, RemoveUserRolesRequest request) {
         // Verify user exists in realm
         boolean userExists = userRepository.exists(
@@ -106,7 +106,8 @@ public class UserRoleService {
     @Transactional(readOnly = true)
     public PagedResponse<UserRoleDTO> getUserRoles(String realmIdentifier, Long userId, UserRoleFilterRequest filter) {
         // 1. Check User Existence
-        Specification<User> userSpecification = Specification.allOf(UserSpecification.hasUserId(userId, realmIdentifier));
+        Specification<User> userSpecification = Specification
+                .allOf(UserSpecification.hasUserId(userId, realmIdentifier));
         boolean userExists = userRepository.exists(userSpecification);
         if (!userExists) {
             throw new EntityNotFoundException("User not found");
@@ -115,7 +116,6 @@ public class UserRoleService {
         // 2. Fetch Effective User Roles (Direct + Group)
         Specification<UserEffectiveRole> spec = Specification.allOf(
                 UserEffectiveRoleSpecification.ofUser(userId, realmIdentifier),
-                UserEffectiveRoleSpecification.isNotExpired(),
                 UserEffectiveRoleSpecification.hasRoleName(filter.getRoleName()),
                 UserEffectiveRoleSpecification.hasRoleStatus(filter.getRoleStatus()),
                 UserEffectiveRoleSpecification.hasUserStatus(filter.getUserStatus()),

@@ -128,7 +128,6 @@ public class GroupPermissionService {
                 Specification<GroupEffectivePermission> spec = Specification.allOf(
                                 GroupEffectivePermissionSpecification.ofGroup(groupId, ancestorIds, group.getLevel(),
                                                 group.getRealm().getId()),
-                                GroupEffectivePermissionSpecification.isNotExpired(),
                                 GroupEffectivePermissionSpecification.hasPermissionName(filter.getPermissionName()),
                                 GroupEffectivePermissionSpecification.hasPermissionStatus(filter.getPermissionStatus()),
                                 GroupEffectivePermissionSpecification.hasGroupStatus(filter.getGroupStatus()),

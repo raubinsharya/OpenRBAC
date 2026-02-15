@@ -120,7 +120,6 @@ public class GroupRoleService {
 
         Specification<GroupRole> spec = Specification.allOf(
                 GroupRoleSpecification.ofGroup(groupId, ancestorIds, group.getLevel(), group.getRealm().getId()),
-                GroupRoleSpecification.isNotExpired(),
                 GroupRoleSpecification.hasRoleName(filter.getRoleName()),
                 GroupRoleSpecification.hasRoleStatus(filter.getRoleStatus()),
                 GroupRoleSpecification.hasGroupStatus(filter.getGroupStatus()),
