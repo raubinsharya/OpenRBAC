@@ -88,6 +88,16 @@ public record GroupPermissionDTO(
                                                 ? effectivePermission.getGroup().getId()
                                                 : null;
 
+                // Calculate the correct assignment type
+                String calculatedAssignmentType;
+                if (effectiveIsInherited) {
+                        // Permission is inherited from a parent group
+                        calculatedAssignmentType = "INHERITED";
+                } else {
+                        // Use the assignment type from the view (DIRECT or ROLE)
+                        calculatedAssignmentType = effectivePermission.getAssignmentType();
+                }
+
                 return GroupPermissionDTO.builder()
                                 .groupPermissionId(null) // Synthetic ID
                                 .groupId(requestedGroupId != null ? requestedGroupId
@@ -106,9 +116,15 @@ public record GroupPermissionDTO(
                                 .isActive(effectivePermission.getIsActive())
                                 .isInherited(effectiveIsInherited)
                                 .sourceGroupId(effectiveSourceGroupId)
-                                .allowInheritance(effectivePermission.getAllowInheritance())
-                                .maxInheritanceDepth(effectivePermission.getMaxInheritanceDepth())
-                                .assignmentType(effectivePermission.getAssignmentType())
+                                .allowInheritance(
+                                                "DIRECT".equals(calculatedAssignmentType)
+                                                                ? effectivePermission.getAllowInheritance()
+                                                                : null)
+                                .maxInheritanceDepth(
+                                                "DIRECT".equals(calculatedAssignmentType)
+                                                                ? effectivePermission.getMaxInheritanceDepth()
+                                                                : null)
+                                .assignmentType(calculatedAssignmentType)
                                 .build();
         }
 }

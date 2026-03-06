@@ -26,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -61,8 +60,12 @@ public class GroupRoleService {
         }
 
         List<Long> existingRoleIds = groupRoleRepository.findExistingRoleIds(groupId, request.getRoleIds());
-        if (!existingRoleIds.isEmpty()) {
-            throw new IllegalArgumentException("Group already has roles " + existingRoleIds);
+        List<Role> rolesToAssign = validRoles.stream()
+                .filter(r -> !existingRoleIds.contains(r.getId()))
+                .toList();
+
+        if (rolesToAssign.isEmpty()) {
+            return;
         }
 
         final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
@@ -73,7 +76,7 @@ public class GroupRoleService {
             return null;
         });
 
-        List<GroupRole> groupRoles = validRoles.stream().map(r -> GroupRole.builder()
+        List<GroupRole> groupRoles = rolesToAssign.stream().map(r -> GroupRole.builder()
                 .group(group)
                 .role(r)
                 .assignedBy(assignedBy)
@@ -100,12 +103,10 @@ public class GroupRoleService {
         }
 
         List<Long> existingRoleIds = groupRoleRepository.findExistingRoleIds(groupId, request.getRoleIds());
-        if (existingRoleIds.size() != request.getRoleIds().size()) {
-            request.getRoleIds().removeAll(new HashSet<>(existingRoleIds));
-            throw new EntityNotFoundException("Roles are not assigned to this group: " + request.getRoleIds());
-        }
 
-        groupRoleRepository.deleteByGroupIdAndRoleIdIn(groupId, existingRoleIds);
+        if (!existingRoleIds.isEmpty()) {
+            groupRoleRepository.deleteByGroupIdAndRoleIdIn(groupId, existingRoleIds);
+        }
     }
 
     @Transactional(readOnly = true)

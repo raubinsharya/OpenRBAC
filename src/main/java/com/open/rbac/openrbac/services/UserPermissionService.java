@@ -26,7 +26,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -63,8 +62,12 @@ public class UserPermissionService {
 
                 List<Long> existingPermissionIds = userPermissionRepository.findExistingPermissionIds(userId,
                                 request.getPermissionIds());
-                if (!existingPermissionIds.isEmpty()) {
-                        throw new IllegalArgumentException("User already has permissions " + existingPermissionIds);
+                List<Permission> permissionsToAssign = validPermissions.stream()
+                                .filter(p -> !existingPermissionIds.contains(p.getId()))
+                                .toList();
+
+                if (permissionsToAssign.isEmpty()) {
+                        return;
                 }
 
                 final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
@@ -75,7 +78,7 @@ public class UserPermissionService {
                         return null;
                 });
 
-                List<UserPermission> userPermissions = validPermissions.stream().map(p -> UserPermission.builder()
+                List<UserPermission> userPermissions = permissionsToAssign.stream().map(p -> UserPermission.builder()
                                 .user(user)
                                 .permission(p)
                                 .assignedBy(assignedBy)
@@ -98,13 +101,10 @@ public class UserPermissionService {
 
                 List<Long> existingPermissionIds = userPermissionRepository.findExistingPermissionIds(userId,
                                 request.getPermissionIds());
-                if (existingPermissionIds.size() != request.getPermissionIds().size()) {
-                        request.getPermissionIds().removeAll(new HashSet<>(existingPermissionIds));
-                        throw new EntityNotFoundException(
-                                        "Permissions are not assigned to this user: " + request.getPermissionIds());
-                }
 
-                userPermissionRepository.deleteByUserIdAndPermissionIdIn(userId, existingPermissionIds);
+                if (!existingPermissionIds.isEmpty()) {
+                        userPermissionRepository.deleteByUserIdAndPermissionIdIn(userId, existingPermissionIds);
+                }
         }
 
         @Transactional(readOnly = true)

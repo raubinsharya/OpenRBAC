@@ -23,7 +23,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -60,8 +59,12 @@ public class UserRoleService {
         }
 
         List<Long> existingRoleIds = userRoleRepository.findExistingRoleIds(userId, request.getRoleIds());
-        if (!existingRoleIds.isEmpty()) {
-            throw new IllegalArgumentException("User already has roles " + existingRoleIds);
+        List<Role> rolesToAssign = validRoles.stream()
+                .filter(r -> !existingRoleIds.contains(r.getId()))
+                .toList();
+
+        if (rolesToAssign.isEmpty()) {
+            return;
         }
 
         // Get current user (assignedBy)
@@ -73,7 +76,7 @@ public class UserRoleService {
             return null;
         });
 
-        List<UserRole> userRoles = validRoles.stream().map(r -> UserRole.builder()
+        List<UserRole> userRoles = rolesToAssign.stream().map(r -> UserRole.builder()
                 .user(user)
                 .role(r)
                 .assignedBy(assignedBy)
@@ -95,12 +98,10 @@ public class UserRoleService {
         }
 
         List<Long> existingRoleIds = userRoleRepository.findExistingRoleIds(userId, request.getRoleIds());
-        if (existingRoleIds.size() != request.getRoleIds().size()) {
-            request.getRoleIds().removeAll(new HashSet<>(existingRoleIds));
-            throw new EntityNotFoundException("Roles are not assigned to this user: " + request.getRoleIds());
-        }
 
-        userRoleRepository.deleteByUserIdAndRoleIdIn(userId, existingRoleIds);
+        if (!existingRoleIds.isEmpty()) {
+            userRoleRepository.deleteByUserIdAndRoleIdIn(userId, existingRoleIds);
+        }
     }
 
     @Transactional(readOnly = true)

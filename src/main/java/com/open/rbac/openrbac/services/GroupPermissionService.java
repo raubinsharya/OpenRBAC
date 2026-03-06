@@ -27,7 +27,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -65,8 +64,12 @@ public class GroupPermissionService {
 
                 List<Long> existingPermissionIds = groupPermissionRepository.findExistingPermissionIds(groupId,
                                 request.getPermissionIds());
-                if (!existingPermissionIds.isEmpty()) {
-                        throw new IllegalArgumentException("Group already has permissions " + existingPermissionIds);
+                List<Permission> permissionsToAssign = validPermissions.stream()
+                                .filter(p -> !existingPermissionIds.contains(p.getId()))
+                                .toList();
+
+                if (permissionsToAssign.isEmpty()) {
+                        return;
                 }
 
                 final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
@@ -77,7 +80,7 @@ public class GroupPermissionService {
                         return null;
                 });
 
-                List<GroupPermission> groupPermissions = validPermissions.stream().map(p -> GroupPermission.builder()
+                List<GroupPermission> groupPermissions = permissionsToAssign.stream().map(p -> GroupPermission.builder()
                                 .group(group)
                                 .permission(p)
                                 .assignedBy(assignedBy)
@@ -106,13 +109,10 @@ public class GroupPermissionService {
 
                 List<Long> existingPermissionIds = groupPermissionRepository.findExistingPermissionIds(groupId,
                                 request.getPermissionIds());
-                if (existingPermissionIds.size() != request.getPermissionIds().size()) {
-                        request.getPermissionIds().removeAll(new HashSet<>(existingPermissionIds));
-                        throw new EntityNotFoundException(
-                                        "Permissions are not assigned to this group: " + request.getPermissionIds());
-                }
 
-                groupPermissionRepository.deleteByGroupIdAndPermissionIdIn(groupId, existingPermissionIds);
+                if (!existingPermissionIds.isEmpty()) {
+                        groupPermissionRepository.deleteByGroupIdAndPermissionIdIn(groupId, existingPermissionIds);
+                }
         }
 
         @Transactional(readOnly = true)
