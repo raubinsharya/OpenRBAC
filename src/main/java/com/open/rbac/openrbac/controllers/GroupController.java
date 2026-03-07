@@ -2,6 +2,7 @@ package com.open.rbac.openrbac.controllers;
 
 import com.open.rbac.openrbac.requestParams.GroupFilterRequest;
 import com.open.rbac.openrbac.requests.CreateGroupRequest;
+import com.open.rbac.openrbac.requests.UpdateGroupRequest;
 import com.open.rbac.openrbac.services.GroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -44,5 +45,21 @@ public class GroupController {
             @PathVariable String realmId,
             @PathVariable Long id) {
         return ResponseEntity.ok(groupService.getHierarchy(realmId, id));
+    }
+
+    @PutMapping("{id}")
+    public ResponseEntity<?> updateGroup(
+            @PathVariable String realmId,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateGroupRequest request) {
+        return ResponseEntity.ok(groupService.updateGroup(realmId, id, request));
+    }
+
+    @PatchMapping("{id}")
+    public ResponseEntity<?> patchGroup(
+            @PathVariable String realmId,
+            @PathVariable Long id,
+            @RequestBody UpdateGroupRequest request) {
+        return ResponseEntity.ok(groupService.patchGroup(realmId, id, request));
     }
 }

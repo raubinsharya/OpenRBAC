@@ -9,9 +9,11 @@ import com.open.rbac.openrbac.models.Realm;
 import com.open.rbac.openrbac.repositories.GroupRepository;
 import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.requests.CreateGroupRequest;
+import com.open.rbac.openrbac.requests.UpdateGroupRequest;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.GroupSpecification;
 import com.open.rbac.openrbac.specifications.RealmSpecification;
+import jakarta.persistence.EntityNotFoundException;
 
 import com.open.rbac.openrbac.models.User;
 import com.open.rbac.openrbac.repositories.UserRepository;
@@ -23,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -96,9 +99,42 @@ public class GroupService {
     }
 
     public GroupDTO getGroupById(String realmIdentifier, Long id) {
+        return GroupDTO.from(getGroupOrThrow(realmIdentifier, id));
+    }
+
+    @RequireAllRoles(value = { "realm-admin" })
+    @Transactional
+    public GroupDTO updateGroup(String realmIdentifier, Long id, UpdateGroupRequest updateData) {
+        Group existing = getGroupOrThrow(realmIdentifier, id);
+
+        existing.setName(updateData.name());
+        existing.setDescription(updateData.description());
+        if (updateData.status() != null) {
+            existing.setStatus(updateData.status());
+        }
+
+        Group saved = groupRepository.save(existing);
+        return GroupDTO.from(saved);
+    }
+
+    @RequireAllRoles(value = { "realm-admin" })
+    @Transactional
+    public GroupDTO patchGroup(String realmIdentifier, Long id, UpdateGroupRequest patchData) {
+        Group existing = getGroupOrThrow(realmIdentifier, id);
+
+        Optional.ofNullable(patchData.name()).ifPresent(existing::setName);
+        Optional.ofNullable(patchData.description()).ifPresent(existing::setDescription);
+        Optional.ofNullable(patchData.status()).ifPresent(existing::setStatus);
+
+        Group saved = groupRepository.save(existing);
+        return GroupDTO.from(saved);
+    }
+
+    private Group getGroupOrThrow(String realmIdentifier, Long id) {
         Specification<Group> specification = GroupSpecification.hasRealm(realmIdentifier)
                 .and(GroupSpecification.hasId(id));
-        return groupRepository.findOne(specification).stream().map(GroupDTO::from).findFirst().orElse(null);
+        return groupRepository.findOne(specification)
+                .orElseThrow(() -> new EntityNotFoundException("Group not found with id: " + id));
     }
 
     public GroupDTO getHierarchy(String realmIdentifier, Long groupId) {
