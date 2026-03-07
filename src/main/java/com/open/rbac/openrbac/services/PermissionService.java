@@ -11,8 +11,10 @@ import com.open.rbac.openrbac.models.Realm;
 import com.open.rbac.openrbac.repositories.PermissionRepository;
 import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.requests.StandardPermission;
+import com.open.rbac.openrbac.requests.UpdatePermissionRequest;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.PermissionSpecification;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import com.open.rbac.openrbac.models.User;
 import com.open.rbac.openrbac.repositories.UserRepository;
@@ -29,6 +31,7 @@ import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -183,5 +186,49 @@ public class PermissionService {
                                 realmIdentifier,
                                 resourceFilterRequest.toPageable());
                 return PagedResponse.fromPage(resources, String::valueOf);
+        }
+
+        @Retryable(retryFor = { ConnectException.class,
+                        TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
+        @RequireAnyRole(value = { "realm-admin" })
+        @Transactional
+        public PermissionDTO updatePermission(String realmIdentifier, Long id, UpdatePermissionRequest updateData) {
+                Permission existing = getPermissionOrThrow(realmIdentifier, id);
+
+                existing.setName(updateData.name());
+                existing.setResource(updateData.resource());
+                existing.setAction(updateData.action());
+                existing.setDescription(updateData.description());
+                if (updateData.status() != null) {
+                        existing.setStatus(updateData.status());
+                }
+
+                Permission saved = permissionRepository.save(existing);
+                return PermissionDTO.from(saved);
+        }
+
+        @Retryable(retryFor = { ConnectException.class,
+                        TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
+        @RequireAnyRole(value = { "realm-admin" })
+        @Transactional
+        public PermissionDTO patchPermission(String realmIdentifier, Long id, UpdatePermissionRequest patchData) {
+                Permission existing = getPermissionOrThrow(realmIdentifier, id);
+
+                Optional.ofNullable(patchData.name()).ifPresent(existing::setName);
+                Optional.ofNullable(patchData.resource()).ifPresent(existing::setResource);
+                Optional.ofNullable(patchData.action()).ifPresent(existing::setAction);
+                Optional.ofNullable(patchData.description()).ifPresent(existing::setDescription);
+                Optional.ofNullable(patchData.status()).ifPresent(existing::setStatus);
+
+                Permission saved = permissionRepository.save(existing);
+                return PermissionDTO.from(saved);
+        }
+
+        private Permission getPermissionOrThrow(String realmIdentifier, Long id) {
+                Specification<Permission> spec = Specification
+                                .allOf(PermissionSpecification.hasRealm(realmIdentifier))
+                                .and(PermissionSpecification.hasId(id));
+                return permissionRepository.findOne(spec)
+                                .orElseThrow(() -> new EntityNotFoundException("Permission not found with id: " + id));
         }
 }

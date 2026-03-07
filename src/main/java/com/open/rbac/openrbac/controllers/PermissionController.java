@@ -9,6 +9,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.open.rbac.openrbac.requests.UpdatePermissionRequest;
 
 @RestController
 @RequestMapping("/api/v1/realms/{realmId}/permissions")
@@ -61,5 +62,21 @@ public class PermissionController {
             @PathVariable String realmId,
             @Valid @RequestBody StandardPermission standardPermission) {
         return ResponseEntity.ok(permissionService.createStandardPermission(realmId, standardPermission));
+    }
+
+    @PutMapping("{id}")
+    public ResponseEntity<?> updatePermission(
+            @PathVariable String realmId,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePermissionRequest request) {
+        return ResponseEntity.ok(permissionService.updatePermission(realmId, id, request));
+    }
+
+    @PatchMapping("{id}")
+    public ResponseEntity<?> patchPermission(
+            @PathVariable String realmId,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdatePermissionRequest request) {
+        return ResponseEntity.ok(permissionService.patchPermission(realmId, id, request));
     }
 }
