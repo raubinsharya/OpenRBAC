@@ -3,6 +3,7 @@ package com.open.rbac.openrbac.controllers;
 import com.open.rbac.openrbac.requestParams.UserRoleFilterRequest;
 import com.open.rbac.openrbac.requests.AddUserRolesRequest;
 import com.open.rbac.openrbac.requests.RemoveUserRolesRequest;
+import com.open.rbac.openrbac.requests.UpdateUserRolesExpiryRequest;
 import com.open.rbac.openrbac.services.UserRoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -52,5 +53,14 @@ public class UserRoleController {
             @RequestBody @Valid RemoveUserRolesRequest request) {
         userRoleService.removeRolesFromUser(realmId, userId, request);
         return ResponseEntity.ok(Map.of("message", "Roles removed successfully"));
+    }
+
+    @PatchMapping
+    public ResponseEntity<?> updateUserRolesExpiry(
+            @PathVariable String realmId,
+            @PathVariable Long userId,
+            @RequestBody @Valid UpdateUserRolesExpiryRequest request) {
+        userRoleService.updateUserRolesExpiry(realmId, userId, request);
+        return ResponseEntity.ok(Map.of("message", "Roles expiry updated successfully"));
     }
 }

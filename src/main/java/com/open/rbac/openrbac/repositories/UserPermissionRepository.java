@@ -17,6 +17,8 @@ public interface UserPermissionRepository
 
         List<UserPermission> findByUserId(Long userId);
 
+        List<UserPermission> findByUserIdAndPermissionIdIn(Long userId, Collection<Long> permissionIds);
+
         @Modifying
         @Query("DELETE FROM UserPermission up WHERE up.user.id = :userId AND up.permission.id IN :permissionIds")
         void deleteByUserIdAndPermissionIdIn(@Param("userId") Long userId,

@@ -11,6 +11,7 @@ import com.open.rbac.openrbac.repositories.UserPermissionRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requests.AddUserPermissionsRequest;
 import com.open.rbac.openrbac.requests.RemoveUserPermissionsRequest;
+import com.open.rbac.openrbac.requests.UpdateUserPermissionsExpiryRequest;
 import com.open.rbac.openrbac.requestParams.CheckPermissionRequest;
 import com.open.rbac.openrbac.requestParams.UserPermissionFilterRequest;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
@@ -105,6 +106,26 @@ public class UserPermissionService {
                 if (!existingPermissionIds.isEmpty()) {
                         userPermissionRepository.deleteByUserIdAndPermissionIdIn(userId, existingPermissionIds);
                 }
+        }
+
+        @Transactional
+        public void updateUserPermissionsExpiry(String realmIdentifier, Long userId,
+                        UpdateUserPermissionsExpiryRequest request) {
+                boolean userExists = userRepository
+                                .exists(Specification.allOf(UserSpecification.hasUserId(userId, realmIdentifier)));
+                if (!userExists) {
+                        throw new EntityNotFoundException("User not found");
+                }
+
+                List<UserPermission> existingAssignments = userPermissionRepository
+                                .findByUserIdAndPermissionIdIn(userId, request.getPermissionIds());
+
+                if (existingAssignments.isEmpty()) {
+                        throw new EntityNotFoundException("No existing permissions found to update");
+                }
+
+                existingAssignments.forEach(assignment -> assignment.setExpiryDate(request.getExpiryDate()));
+                userPermissionRepository.saveAll(existingAssignments);
         }
 
         @Transactional(readOnly = true)

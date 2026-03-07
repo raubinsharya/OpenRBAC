@@ -21,6 +21,8 @@ public interface RolePermissionRepository
 
         void deleteByRoleIdAndPermissionIdIn(Long roleId, Collection<Long> permissionIds);
 
+        List<RolePermission> findByRoleIdAndPermissionIdIn(Long roleId, Collection<Long> permissionIds);
+
         @Query("""
                         SELECT CASE WHEN COUNT(rp) > 0 THEN true ELSE false END
                         FROM RolePermission rp

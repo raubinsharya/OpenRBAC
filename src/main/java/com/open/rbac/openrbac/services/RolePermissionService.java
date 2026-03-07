@@ -11,6 +11,7 @@ import com.open.rbac.openrbac.repositories.RoleRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requests.AddRolePermissionsRequest;
 import com.open.rbac.openrbac.requests.RemoveRolePermissionsRequest;
+import com.open.rbac.openrbac.requests.UpdateRolePermissionsExpiryRequest;
 import com.open.rbac.openrbac.requestParams.CheckPermissionRequest;
 import com.open.rbac.openrbac.requestParams.RolePermissionFilterRequest;
 import com.open.rbac.openrbac.dtos.RolePermissionDTO;
@@ -61,10 +62,15 @@ public class RolePermissionService {
         if (!notFoundPermissionIds.isEmpty()) {
             throw new EntityNotFoundException("Permissions not found: " + notFoundPermissionIds);
         }
-        List<Long> rolePermissionAssociation = rolePermissionRepository
+        List<Long> existingPermissionIds = rolePermissionRepository
                 .findExistingPermissionIds(roleId, request.getPermissionIds());
-        if (!rolePermissionAssociation.isEmpty()) {
-            throw new IllegalArgumentException("Role has already permissions " + rolePermissionAssociation);
+
+        List<Permission> permissionsToAssign = validPermissions.stream()
+                .filter(p -> !existingPermissionIds.contains(p.getId()))
+                .toList();
+
+        if (permissionsToAssign.isEmpty()) {
+            return;
         }
 
         // Get current user (assignedBy)
@@ -75,7 +81,7 @@ public class RolePermissionService {
             }
             return null;
         });
-        List<RolePermission> rolePermissions = validPermissions.stream().map(p -> RolePermission.builder()
+        List<RolePermission> rolePermissions = permissionsToAssign.stream().map(p -> RolePermission.builder()
                 .role(role)
                 .permission(p)
                 .assignedBy(assignedBy)
@@ -93,13 +99,33 @@ public class RolePermissionService {
         if (!roleExist) {
             throw new EntityNotFoundException("Role not found");
         }
-        List<Long> existPermissions = rolePermissionRepository.findExistingPermissionIds(roleId,
+        List<Long> existPermissionIds = rolePermissionRepository.findExistingPermissionIds(roleId,
                 request.getPermissionIds());
-        if (existPermissions.size() != request.getPermissionIds().size()) {
-            request.getPermissionIds().removeAll(new HashSet<>(existPermissions));
-            throw new EntityNotFoundException("Permissions are not part this role : " + request.getPermissionIds());
+
+        if (!existPermissionIds.isEmpty()) {
+            rolePermissionRepository.deleteByRoleIdAndPermissionIdIn(roleId, existPermissionIds);
         }
-        rolePermissionRepository.deleteByRoleIdAndPermissionIdIn(roleId, existPermissions);
+    }
+
+    @Transactional
+    @RequireAnyRole(value = { "realm-admin", "group-admin" })
+    public void updatePermissionsExpiry(String realmIdentifier, Long roleId,
+            UpdateRolePermissionsExpiryRequest request) {
+        Long realmId = resolveRealmId(realmIdentifier);
+        boolean roleExist = roleRepository.existsByIdAndRealm_id(roleId, realmId);
+        if (!roleExist) {
+            throw new EntityNotFoundException("Role not found");
+        }
+
+        List<RolePermission> existingAssignments = rolePermissionRepository.findByRoleIdAndPermissionIdIn(roleId,
+                request.getPermissionIds());
+
+        if (existingAssignments.isEmpty()) {
+            throw new EntityNotFoundException("No existing permissions found to update");
+        }
+
+        existingAssignments.forEach(assignment -> assignment.setExpiryDate(request.getExpiryDate()));
+        rolePermissionRepository.saveAll(existingAssignments);
     }
 
     @Transactional(readOnly = true)

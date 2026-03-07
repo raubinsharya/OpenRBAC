@@ -13,6 +13,7 @@ import com.open.rbac.openrbac.repositories.UserRoleRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requests.AddUserRolesRequest;
 import com.open.rbac.openrbac.requests.RemoveUserRolesRequest;
+import com.open.rbac.openrbac.requests.UpdateUserRolesExpiryRequest;
 import com.open.rbac.openrbac.requestParams.UserRoleFilterRequest;
 import com.open.rbac.openrbac.specifications.UserEffectiveRoleSpecification;
 import com.open.rbac.openrbac.specifications.UserSpecification;
@@ -102,6 +103,24 @@ public class UserRoleService {
         if (!existingRoleIds.isEmpty()) {
             userRoleRepository.deleteByUserIdAndRoleIdIn(userId, existingRoleIds);
         }
+    }
+
+    @Transactional
+    public void updateUserRolesExpiry(String realmId, Long userId, UpdateUserRolesExpiryRequest request) {
+        boolean userExists = userRepository.exists(
+                Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
+        if (!userExists) {
+            throw new EntityNotFoundException("User not found");
+        }
+
+        List<UserRole> existingAssignments = userRoleRepository.findByUserIdAndRoleIdIn(userId, request.getRoleIds());
+
+        if (existingAssignments.isEmpty()) {
+            throw new EntityNotFoundException("No existing roles found to update");
+        }
+
+        existingAssignments.forEach(assignment -> assignment.setExpiryDate(request.getExpiryDate()));
+        userRoleRepository.saveAll(existingAssignments);
     }
 
     @Transactional(readOnly = true)

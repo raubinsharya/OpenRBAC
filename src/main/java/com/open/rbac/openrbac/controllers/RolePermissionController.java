@@ -4,6 +4,7 @@ import com.open.rbac.openrbac.requestParams.CheckPermissionRequest;
 import com.open.rbac.openrbac.requestParams.RolePermissionFilterRequest;
 import com.open.rbac.openrbac.requests.AddRolePermissionsRequest;
 import com.open.rbac.openrbac.requests.RemoveRolePermissionsRequest;
+import com.open.rbac.openrbac.requests.UpdateRolePermissionsExpiryRequest;
 import com.open.rbac.openrbac.services.RolePermissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -53,6 +54,15 @@ public class RolePermissionController {
             @RequestBody @Valid RemoveRolePermissionsRequest request) {
         rolePermissionService.removePermissionsFromRole(realmId, id, request);
         return ResponseEntity.ok(Map.of("message", "Permissions removed successfully"));
+    }
+
+    @PatchMapping
+    public ResponseEntity<?> updatePermissionsExpiry(
+            @PathVariable String realmId,
+            @PathVariable Long id,
+            @RequestBody @Valid UpdateRolePermissionsExpiryRequest request) {
+        rolePermissionService.updatePermissionsExpiry(realmId, id, request);
+        return ResponseEntity.ok(Map.of("message", "Permissions expiry updated successfully"));
     }
 
     @GetMapping("/resources")

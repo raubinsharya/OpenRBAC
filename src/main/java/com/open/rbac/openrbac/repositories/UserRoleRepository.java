@@ -23,6 +23,8 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Long>, JpaSp
     @Query("DELETE FROM UserRole ur WHERE ur.user.id = :userId AND ur.role.id IN :roleIds")
     void deleteByUserIdAndRoleIdIn(Long userId, Collection<Long> roleIds);
 
+    List<UserRole> findByUserIdAndRoleIdIn(Long userId, Collection<Long> roleIds);
+
     boolean existsByUserIdAndRoleId(Long userId, Long roleId);
 
     boolean existsByUserIdAndRoleIdAndRole_Realm_Id(Long userId, Long roleId, Long realmId);
