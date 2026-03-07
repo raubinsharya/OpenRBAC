@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
 import lombok.Builder;
@@ -34,10 +35,12 @@ public class RolePermission {
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "role_id", nullable = false)
         @ToString.Exclude
+        @NotNull(message = "Role is required")
         private Role role;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "permission_id", nullable = false)
+        @NotNull(message = "Permission is required")
         private Permission permission;
 
         @Column(name = "created_at", nullable = false, updatable = false)

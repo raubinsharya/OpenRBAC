@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -36,10 +37,12 @@ public class GroupRole {
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "group_id", nullable = false)
+        @NotNull(message = "Group is required")
         private Group group;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "role_id", nullable = false)
+        @NotNull(message = "Role is required")
         private Role role;
 
         @Column(name = "created_at", nullable = false, updatable = false)
@@ -62,6 +65,7 @@ public class GroupRole {
          * False if directly assigned to this group
          */
         @Column(name = "is_inherited", nullable = false)
+        @NotNull(message = "Inheritance status is required")
         @Builder.Default
         private Boolean isInherited = false;
 
@@ -74,6 +78,7 @@ public class GroupRole {
         private Group sourceGroup;
 
         @Column(name = "is_active", nullable = false)
+        @NotNull(message = "Activation status is required")
         @Builder.Default
         private Boolean isActive = true;
 
@@ -82,6 +87,7 @@ public class GroupRole {
          * Default: false (no inheritance)
          */
         @Column(name = "allow_inheritance", nullable = false)
+        @NotNull(message = "Allow inheritance setting is required")
         @Builder.Default
         private Boolean allowInheritance = false;
 

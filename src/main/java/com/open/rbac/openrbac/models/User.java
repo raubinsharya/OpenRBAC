@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.*;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.*;
 
 import java.time.Instant;
@@ -27,8 +29,8 @@ import java.util.List;
         @Index(name = "idx_user_status", columnList = "status"),
         @Index(name = "idx_user_expiry", columnList = "account_expiry_date")
 }, uniqueConstraints = {
-        @UniqueConstraint(name = "uk_user_realm_email", columnNames = {"realm_id", "email"}),
-        @UniqueConstraint(name = "uk_user_keycloak_id", columnNames = {"keycloak_user_id"})
+        @UniqueConstraint(name = "uk_user_realm_email", columnNames = { "realm_id", "email" }),
+        @UniqueConstraint(name = "uk_user_keycloak_id", columnNames = { "keycloak_user_id" })
 })
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
@@ -44,17 +46,24 @@ public class User {
     private String keycloakUserId;
 
     // === USER INFORMATION (synced from Keycloak) ===
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
+    @NotBlank(message = "First name is required")
+    @Size(min = 1, max = 100, message = "First name must be between 1 and 100 characters")
     private String firstName;
 
-    @Column
+    @Column(length = 100)
+    @Size(max = 100, message = "Last name cannot exceed 100 characters")
     private String lastName;
 
-    @Column()
+    @Column(length = 150)
     @Email(message = "Invalid email format")
+    @NotBlank(message = "Email is required")
+    @Size(max = 150, message = "Email cannot exceed 150 characters")
     private String email;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
+    @NotBlank(message = "Username is required")
+    @Size(min = 2, max = 100, message = "Username must be between 2 and 100 characters")
     private String username;
 
     // === RBAC STATUS ===
@@ -117,7 +126,8 @@ public class User {
     }
 
     public boolean isAccountExpired() {
-        if (this.accountExpiryDate == null) return false;
+        if (this.accountExpiryDate == null)
+            return false;
         return this.accountExpiryDate.isBefore(LocalDateTime.now());
     }
 }

@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.models;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -33,10 +34,12 @@ public class UserRole {
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "user_id", nullable = false)
+        @NotNull(message = "User is required")
         private User user;
 
         @ManyToOne(fetch = FetchType.LAZY)
         @JoinColumn(name = "role_id", nullable = false)
+        @NotNull(message = "Role is required")
         private Role role;
 
         @Column(name = "created_at", nullable = false, updatable = false)
@@ -55,6 +58,7 @@ public class UserRole {
         private LocalDateTime expiryDate;
 
         @Column(name = "is_active", nullable = false)
+        @NotNull(message = "Activation status is required")
         @Builder.Default
         private Boolean isActive = true;
 }
