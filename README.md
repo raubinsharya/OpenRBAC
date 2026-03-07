@@ -125,7 +125,14 @@ src/main/java/com/open/rbac/openrbac/
 
 ---
 
-## 📖 API Documentation (Summary)
+## 📖 API Documentation
+
+**Interactive Swagger UI is available out-of-the-box!**
+Once the application is running, simply navigate to:
+👉 `http://localhost:8080/swagger-ui.html`
+to explore, test, and authenticate with all API endpoints directly from your browser.
+
+### Important Endpoints Summary
 
 | Endpoint                                           | Method     | Description                                                       |
 | :------------------------------------------------- | :--------- | :---------------------------------------------------------------- |
