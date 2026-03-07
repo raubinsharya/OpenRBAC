@@ -9,9 +9,11 @@ import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.repositories.RoleRepository;
 import com.open.rbac.openrbac.models.User;
 import com.open.rbac.openrbac.repositories.UserRepository;
+import com.open.rbac.openrbac.requests.UpdateRoleRequest;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.RoleSpecification;
 import com.open.rbac.openrbac.utils.SecurityUtils;
+import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.net.ConnectException;
+import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
 @Service
@@ -73,5 +76,53 @@ public class RoleService {
         role.setCreatedBy(creator);
 
         return roleRepository.save(role);
+    }
+
+    @Retryable(retryFor = { ConnectException.class,
+            TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
+    @RequireAnyRole(value = { "realm-admin" })
+    @Transactional
+    public RoleDTO updateRole(String realmIdentifier, Long id, UpdateRoleRequest updateData) {
+        Role existing = getRoleOrThrow(realmIdentifier, id);
+
+        // Usually prevent updates to system roles via basic endpoints
+        if (existing.getIsSystemRole()) {
+            throw new IllegalStateException("System roles cannot be modified directly");
+        }
+
+        existing.setName(updateData.name());
+        existing.setDescription(updateData.description());
+        if (updateData.status() != null) {
+            existing.setStatus(updateData.status());
+        }
+
+        Role saved = roleRepository.save(existing);
+        return RoleDTO.from(saved);
+    }
+
+    @Retryable(retryFor = { ConnectException.class,
+            TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
+    @RequireAnyRole(value = { "realm-admin" })
+    @Transactional
+    public RoleDTO patchRole(String realmIdentifier, Long id, UpdateRoleRequest patchData) {
+        Role existing = getRoleOrThrow(realmIdentifier, id);
+
+        if (existing.getIsSystemRole()) {
+            throw new IllegalStateException("System roles cannot be modified directly");
+        }
+
+        Optional.ofNullable(patchData.name()).ifPresent(existing::setName);
+        Optional.ofNullable(patchData.description()).ifPresent(existing::setDescription);
+        Optional.ofNullable(patchData.status()).ifPresent(existing::setStatus);
+
+        Role saved = roleRepository.save(existing);
+        return RoleDTO.from(saved);
+    }
+
+    private Role getRoleOrThrow(String realmIdentifier, Long id) {
+        Specification<Role> spec = Specification.allOf(RoleSpecification.hasRealm(realmIdentifier))
+                .and(RoleSpecification.hasId(id));
+        return roleRepository.findOne(spec)
+                .orElseThrow(() -> new EntityNotFoundException("Role not found with id: " + id));
     }
 }

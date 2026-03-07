@@ -76,7 +76,7 @@ public class PermissionController {
     public ResponseEntity<?> patchPermission(
             @PathVariable String realmId,
             @PathVariable Long id,
-            @Valid @RequestBody UpdatePermissionRequest request) {
+            @RequestBody UpdatePermissionRequest request) {
         return ResponseEntity.ok(permissionService.patchPermission(realmId, id, request));
     }
 }
