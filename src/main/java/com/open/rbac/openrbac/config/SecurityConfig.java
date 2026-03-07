@@ -40,22 +40,20 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/actuator/health").permitAll()
-                .anyRequest().authenticated()
-            )
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint(authenticationEntryPoint)
-                .accessDeniedHandler(accessDeniedHandler)
-            )
-            .oauth2ResourceServer(oauth2 -> oauth2
-                .jwt(jwt -> jwt.decoder(multiRealmJwtDecoder()))
-                .authenticationEntryPoint(authenticationEntryPoint)
-            );
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(authz -> authz
+                        .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/actuator/health").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        .anyRequest().authenticated())
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt.decoder(multiRealmJwtDecoder()))
+                        .authenticationEntryPoint(authenticationEntryPoint));
 
         return http.build();
     }
@@ -65,20 +63,18 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
 
         List<String> allowedOrigins = List.of(
-            "http://localhost:4200",
-            "http://localhost:3000",
-            "http://127.0.0.1:4200"
-        );
+                "http://localhost:4200",
+                "http://localhost:3000",
+                "http://127.0.0.1:4200");
 
         configuration.setAllowedOrigins(allowedOrigins);
         configuration.setAllowedMethods(List.of(
-            HttpMethod.GET.name(),
-            HttpMethod.POST.name(),
-            HttpMethod.PUT.name(),
-            HttpMethod.DELETE.name(),
-            HttpMethod.PATCH.name(),
-            HttpMethod.OPTIONS.name()
-        ));
+                HttpMethod.GET.name(),
+                HttpMethod.POST.name(),
+                HttpMethod.PUT.name(),
+                HttpMethod.DELETE.name(),
+                HttpMethod.PATCH.name(),
+                HttpMethod.OPTIONS.name()));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
         configuration.setExposedHeaders(List.of("Authorization"));

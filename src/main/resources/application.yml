@@ -24,6 +24,13 @@ spring:
     livereload:
       enabled: true
 
+springdoc:
+  swagger-ui:
+    oauth:
+      client-id: angular
+      use-pkce-with-authorization-code-grant: true
+
+
 server:
   port: 8080
   error:

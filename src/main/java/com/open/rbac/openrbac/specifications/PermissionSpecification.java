@@ -1,14 +1,16 @@
 package com.open.rbac.openrbac.specifications;
 
 import com.open.rbac.openrbac.models.Permission;
+import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
 
 public class PermissionSpecification {
 
-    public static  Specification<Permission> hasId(Long permissionId) {
-        if(permissionId == null) return null;
+    public static Specification<Permission> hasId(Long permissionId) {
+        if (permissionId == null)
+            return null;
         return (root, query, cb) -> cb.equal(root.get("id"), permissionId);
     }
 
@@ -46,7 +48,8 @@ public class PermissionSpecification {
 
     public static Specification<Permission> ofUser(String userName) {
         return (root, query, cb) -> {
-            if (userName == null || userName.isEmpty()) return null;
+            if (userName == null || userName.isEmpty())
+                return null;
             // Join with users collection to get permissions directly assigned to user
             var users = root.join("users");
             return cb.equal(cb.lower(users.get("username")), userName.toLowerCase());
@@ -67,37 +70,80 @@ public class PermissionSpecification {
 
     public static Specification<Permission> hasCreatedAfter(LocalDateTime dateTime) {
         return (root, query, cb) -> {
-            if (dateTime == null) return null;
+            if (dateTime == null)
+                return null;
             return cb.greaterThan(root.get("createdAt"), dateTime);
         };
     }
 
     public static Specification<Permission> hasCreatedBefore(LocalDateTime dateTime) {
         return (root, query, cb) -> {
-            if (dateTime == null) return null;
+            if (dateTime == null)
+                return null;
             return cb.lessThan(root.get("createdAt"), dateTime);
         };
     }
 
     public static Specification<Permission> hasUpdatedAfter(LocalDateTime dateTime) {
         return (root, query, cb) -> {
-            if (dateTime == null) return null;
+            if (dateTime == null)
+                return null;
             return cb.greaterThan(root.get("updatedAt"), dateTime);
         };
     }
 
     public static Specification<Permission> hasUpdatedBefore(LocalDateTime dateTime) {
         return (root, query, cb) -> {
-            if (dateTime == null) return null;
+            if (dateTime == null)
+                return null;
             return cb.lessThan(root.get("updatedAt"), dateTime);
         };
     }
 
     public static Specification<Permission> hasRealm(Long realmId) {
         return (root, query, cb) -> {
-            if (realmId == null) return null;
+            if (realmId == null)
+                return null;
             var realmJoin = root.join("realm");
             return cb.equal(realmJoin.get("id"), realmId);
+        };
+    }
+
+    public static Specification<Permission> hasRealm(String realmIdentifier) {
+        return (root, query, cb) -> {
+            if (realmIdentifier == null || realmIdentifier.trim().isEmpty())
+                return null;
+
+            var realmJoin = root.join("realm", jakarta.persistence.criteria.JoinType.INNER);
+            if (query != null) {
+                query.distinct(true);
+            }
+
+            try {
+                Long id = Long.parseLong(realmIdentifier);
+                return cb.equal(realmJoin.get("id"), id);
+            } catch (NumberFormatException e) {
+                Predicate namePredicate = cb.equal(realmJoin.get("name"), realmIdentifier);
+                Predicate realmIdPredicate = cb.equal(realmJoin.get("realmId"), realmIdentifier);
+                return cb.or(namePredicate, realmIdPredicate);
+            }
+        };
+    }
+
+    public static Specification<Permission> fetchWithCreatedBy() {
+        return (root, query, cb) -> {
+            if (query != null && Long.class != query.getResultType() && long.class != query.getResultType()) {
+                root.fetch("createdBy", jakarta.persistence.criteria.JoinType.LEFT);
+            }
+            return null;
+        };
+    }
+
+    public static Specification<Permission> hasCreatedBy(String createdBy) {
+        return (root, query, cb) -> {
+            if (createdBy == null || createdBy.trim().isEmpty())
+                return null;
+            return cb.like(cb.lower(root.get("createdBy").get("username")), "%" + createdBy.toLowerCase() + "%");
         };
     }
 }

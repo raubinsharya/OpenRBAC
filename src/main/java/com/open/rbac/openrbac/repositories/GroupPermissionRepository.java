@@ -12,11 +12,16 @@ import java.util.List;
 
 @Repository
 public interface GroupPermissionRepository
-        extends JpaRepository<GroupPermission, Long>, JpaSpecificationExecutor<GroupPermission> {
+                extends JpaRepository<GroupPermission, Long>, JpaSpecificationExecutor<GroupPermission> {
 
-    @Query("SELECT gp.permission.id FROM GroupPermission gp WHERE gp.group.id = :groupId AND gp.permission.id IN :permissionIds")
-    List<Long> findExistingPermissionIds(@Param("groupId") Long groupId,
-            @Param("permissionIds") Collection<Long> permissionIds);
+        @Query("SELECT gp.permission.id FROM GroupPermission gp WHERE gp.group.id = :groupId AND gp.permission.id IN :permissionIds")
+        List<Long> findExistingPermissionIds(@Param("groupId") Long groupId,
+                        @Param("permissionIds") Collection<Long> permissionIds);
 
-    List<GroupPermission> findByGroupIdAndPermissionIdIn(Long groupId, Collection<Long> permissionIds);
+        List<GroupPermission> findByGroupIdAndPermissionIdIn(Long groupId, Collection<Long> permissionIds);
+
+        @org.springframework.data.jpa.repository.Modifying
+        @Query("DELETE FROM GroupPermission gp WHERE gp.group.id = :groupId AND gp.permission.id IN :permissionIds")
+        void deleteByGroupIdAndPermissionIdIn(@Param("groupId") Long groupId,
+                        @Param("permissionIds") Collection<Long> permissionIds);
 }

@@ -6,10 +6,13 @@ import com.open.rbac.openrbac.models.Permission;
 import com.open.rbac.openrbac.models.Role;
 import com.open.rbac.openrbac.models.User;
 import com.open.rbac.openrbac.repositories.PermissionRepository;
+import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.repositories.RoleRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requests.AddRolePermissionsRequest;
 import com.open.rbac.openrbac.requests.RemoveRolePermissionsRequest;
+import com.open.rbac.openrbac.requests.UpdateRolePermissionsExpiryRequest;
+import com.open.rbac.openrbac.requestParams.CheckPermissionRequest;
 import com.open.rbac.openrbac.requestParams.RolePermissionFilterRequest;
 import com.open.rbac.openrbac.dtos.RolePermissionDTO;
 import com.open.rbac.openrbac.models.RolePermission;
@@ -19,11 +22,11 @@ import com.open.rbac.openrbac.specifications.RoleSpecification;
 import com.open.rbac.openrbac.utils.SecurityUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 
 @Service
@@ -31,6 +34,7 @@ import java.util.List;
 @Transactional
 public class RolePermissionService {
 
+    private final RealmRepository realmRepository;
     private final RoleRepository roleRepository;
     private final PermissionRepository permissionRepository;
     private final RolePermissionRepository rolePermissionRepository;
@@ -38,7 +42,8 @@ public class RolePermissionService {
 
     @Transactional
     @RequireAnyRole(value = { "realm-admin", "group-admin" })
-    public void addPermissionsToRole(Long realmId, Long roleId, AddRolePermissionsRequest request) {
+    public void addPermissionsToRole(String realmIdentifier, Long roleId, AddRolePermissionsRequest request) {
+        Long realmId = resolveRealmId(realmIdentifier);
         Role role = roleRepository.findOne(Specification.allOf(
                 RoleSpecification.hasId(roleId),
                 RoleSpecification.hasRealm(realmId)))
@@ -56,21 +61,26 @@ public class RolePermissionService {
         if (!notFoundPermissionIds.isEmpty()) {
             throw new EntityNotFoundException("Permissions not found: " + notFoundPermissionIds);
         }
-        List<Long> rolePermissionAssociation = rolePermissionRepository
+        List<Long> existingPermissionIds = rolePermissionRepository
                 .findExistingPermissionIds(roleId, request.getPermissionIds());
-        if (!rolePermissionAssociation.isEmpty()) {
-            throw new IllegalArgumentException("Role has already permissions " + rolePermissionAssociation);
+
+        List<Permission> permissionsToAssign = validPermissions.stream()
+                .filter(p -> !existingPermissionIds.contains(p.getId()))
+                .toList();
+
+        if (permissionsToAssign.isEmpty()) {
+            return;
         }
 
         // Get current user (assignedBy)
         final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
-            String username = jwt.getClaimAsString("preferred_username");
-            if (username != null) {
-                return userRepository.findByUsername(username).orElse(null);
+            String keycloakUserId = jwt.getSubject();
+            if (keycloakUserId != null) {
+                return userRepository.findByKeycloakUserId(keycloakUserId).orElse(null);
             }
             return null;
         });
-        List<RolePermission> rolePermissions = validPermissions.stream().map(p -> RolePermission.builder()
+        List<RolePermission> rolePermissions = permissionsToAssign.stream().map(p -> RolePermission.builder()
                 .role(role)
                 .permission(p)
                 .assignedBy(assignedBy)
@@ -82,23 +92,45 @@ public class RolePermissionService {
 
     @Transactional
     @RequireAnyRole(value = { "realm-admin", "group-admin" })
-    public void removePermissionsFromRole(Long realmId, Long roleId, RemoveRolePermissionsRequest request) {
+    public void removePermissionsFromRole(String realmIdentifier, Long roleId, RemoveRolePermissionsRequest request) {
+        Long realmId = resolveRealmId(realmIdentifier);
         boolean roleExist = roleRepository.existsByIdAndRealm_id(roleId, realmId);
         if (!roleExist) {
             throw new EntityNotFoundException("Role not found");
         }
-        List<Long> existPermissions = rolePermissionRepository.findExistingPermissionIds(roleId,
+        List<Long> existPermissionIds = rolePermissionRepository.findExistingPermissionIds(roleId,
                 request.getPermissionIds());
-        if (existPermissions.size() != request.getPermissionIds().size()) {
-            request.getPermissionIds().removeAll(new HashSet<>(existPermissions));
-            throw new EntityNotFoundException("Permissions are not part this role : " + request.getPermissionIds());
+
+        if (!existPermissionIds.isEmpty()) {
+            rolePermissionRepository.deleteByRoleIdAndPermissionIdIn(roleId, existPermissionIds);
         }
-        rolePermissionRepository.deleteByRoleIdAndPermissionIdIn(roleId, existPermissions);
+    }
+
+    @Transactional
+    @RequireAnyRole(value = { "realm-admin", "group-admin" })
+    public void updatePermissionsExpiry(String realmIdentifier, Long roleId,
+            UpdateRolePermissionsExpiryRequest request) {
+        Long realmId = resolveRealmId(realmIdentifier);
+        boolean roleExist = roleRepository.existsByIdAndRealm_id(roleId, realmId);
+        if (!roleExist) {
+            throw new EntityNotFoundException("Role not found");
+        }
+
+        List<RolePermission> existingAssignments = rolePermissionRepository.findByRoleIdAndPermissionIdIn(roleId,
+                request.getPermissionIds());
+
+        if (existingAssignments.isEmpty()) {
+            throw new EntityNotFoundException("No existing permissions found to update");
+        }
+
+        existingAssignments.forEach(assignment -> assignment.setExpiryDate(request.getExpiryDate()));
+        rolePermissionRepository.saveAll(existingAssignments);
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<RolePermissionDTO> getRolePermissions(Long realmId, Long roleId,
+    public PagedResponse<RolePermissionDTO> getRolePermissions(String realmIdentifier, Long roleId,
             RolePermissionFilterRequest filter) {
+        Long realmId = resolveRealmId(realmIdentifier);
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
@@ -113,16 +145,16 @@ public class RolePermissionService {
                 RolePermissionSpecification.assignedBy(filter.getAssignedBy()),
                 RolePermissionSpecification.hasRoleStatus(filter.getRoleStatus()),
                 RolePermissionSpecification.assignedAtBefore(filter.getAssignedAtBefore()),
-                RolePermissionSpecification.assignedAtAfter(filter.getAssignedAtAfter()),
-                RolePermissionSpecification.isNotExpired());
+                RolePermissionSpecification.assignedAtAfter(filter.getAssignedAtAfter()));
 
         return PagedResponse.fromPage(rolePermissionRepository.findAll(spec, filter.toPageable()),
                 RolePermissionDTO::from);
     }
 
     @Transactional(readOnly = true)
-    public boolean checkRolePermission(Long realmId, Long roleId,
-            com.open.rbac.openrbac.requestParams.CheckPermissionRequest request) {
+    public boolean checkRolePermission(String realmIdentifier, Long roleId,
+            CheckPermissionRequest request) {
+        Long realmId = resolveRealmId(realmIdentifier);
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
@@ -135,8 +167,9 @@ public class RolePermissionService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<String> getRoleResources(Long realmId, Long roleId,
-            org.springframework.data.domain.Pageable pageable) {
+    public PagedResponse<String> getRoleResources(String realmIdentifier, Long roleId,
+            Pageable pageable) {
+        Long realmId = resolveRealmId(realmIdentifier);
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
@@ -145,12 +178,20 @@ public class RolePermissionService {
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<String> getRoleActions(Long realmId, Long roleId,
-            org.springframework.data.domain.Pageable pageable) {
+    public PagedResponse<String> getRoleActions(String realmIdentifier, Long roleId,
+            Pageable pageable) {
+        Long realmId = resolveRealmId(realmIdentifier);
         if (!roleRepository.existsByIdAndRealm_id(roleId, realmId)) {
             throw new EntityNotFoundException("Role not found");
         }
         return PagedResponse.fromPage(rolePermissionRepository.findDistinctActionsByRole(realmId, roleId, pageable),
                 s -> s);
+    }
+
+    private Long resolveRealmId(String realmIdentifier) {
+        return realmRepository
+                .findOne(com.open.rbac.openrbac.specifications.RealmSpecification.hasIdOrName(realmIdentifier))
+                .orElseThrow(() -> new EntityNotFoundException("Realm " + realmIdentifier + " not found"))
+                .getId();
     }
 }

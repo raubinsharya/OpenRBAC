@@ -59,6 +59,11 @@ public class Group {
     @JsonIgnore
     private Group parentGroup;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    @JsonIgnore
+    private User createdBy;
+
     /**
      * Materialized path of ancestors
      * Format: /1/5/ where numbers are ancestor group IDs

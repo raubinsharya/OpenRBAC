@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.1-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
 
-OpenRBAC is a high-performance, developer-friendly **Role-Based Access Control (RBAC)** engine designed for modern microservices and multi-tenant applications. It provides a robust framework for managing users, roles, groups, and permissions with built-in support for hierarchical structures, transition-safe audits, and temporary access.
+OpenRBAC is a high-performance, developer-friendly **Role-Based Access Control (RBAC)** engine designed for modern microservices and multi-tenant applications. It goes beyond simple RBAC by offering a unified, high-speed authorization model that handles complex hierarchies and inheritance with ease.
 
 ---
 
@@ -16,13 +16,20 @@ OpenRBAC is a high-performance, developer-friendly **Role-Based Access Control (
 ## 🏁 Project Status & Roadmap
 
 ### ✅ Available Now
-- **Multi-Tenancy:** Robust Realm-based isolation.
-- **Hierarchical Groups:** Full support for nested groups and membership inheritance.
-- **Granular RBAC:** Direct, Role, and Group-based permission mapping.
-- **Temporary Access:** Expiry date support for all security assignments.
-- **Annotation Security:** AOP-driven access control for Spring Boot controllers.
-- **Keycloak Integration:** Standard OIDC/JWT support for identity.
-- **Advanced Filtering:** Powerful specification-based API for searching and pagination.
+- **Multi-Tenancy:** Robust Realm-based isolation for all resources.
+- **Hierarchical Groups:** Full support for nested groups with recursive membership inheritance.
+- **Unified "Effective" Views:** 
+    - **Single-Query Architecture:** All user roles and permissions (Direct, Role-based, Group-based) are unified into efficient read-only views (`UserEffectiveRole`, `UserEffectivePermission`) utilizing Database Views/Subselects.
+    - **Performance:** Solves the "N+1" problem by fetching all effective security contexts in a single query.
+- **Granular RBAC:** 
+    - **Four-Level Permission Inheritance:** 
+        1. `DIRECT`: Assigned explicitly to a user.
+        2. `ROLE`: Inherited via roles assigned to the user.
+        3. `GROUP`: Inherited via permissions assigned to groups the user is in.
+        4. `GROUP_ROLE`: Inherited via roles assigned to those groups.
+- **Temporary Access:** Expiry date support for all assignments (Roles, Groups, Permissions) which is automatically enforced in the unified views.
+- **Annotation Security:** AOP-driven access control (`@RequireAnyRole`, `@RequireAllPermissions`).
+- **Advanced Filtering:** Powerful API for searching by `assignmentType` (e.g., `DIRECT`, `GROUP`), status, and flexible date ranges.
 
 ### 🚀 Coming Soon (Planned)
 - **Admin UI:** A sleek, modern dashboard for managing realms, users, and permissions visually.
@@ -36,13 +43,15 @@ OpenRBAC is a high-performance, developer-friendly **Role-Based Access Control (
 
 ## ✨ Key Features
 
-- 🌍 **Multi-Tenancy (Realms):** Isolate data and configuration across different organizations or environments using Realms.
-- 🌳 **Hierarchical Groups:** Support for nested groups with membership inheritance and materialized path querying for extreme performance.
-- 🔐 **Flexible Permission Model:** Define permissions using a `Resource:Action` pattern. Support for direct user permissions, role-based, and group-based assignments.
-- ⏳ **Temporary Access:** Built-in support for expiry dates on all assignments (Roles, Groups, Permissions).
-- 🛡️ **Annotation-Driven Security:** Secure your Spring Boot endpoints easily with `@RequireAnyRole`, `@RequireAllPermissions`, and more.
-- 🆔 **Keycloak Integration:** Designed to work seamlessly with Keycloak for identity management.
-- 🔎 **Advanced Filtering:** Powerful API filtering and pagination powered by JPA Specifications and Criteria API.
+- 🌍 **Multi-Tenancy (Realms):** Isolate data and configuration across different organizations or environments.
+- 🌳 **Hierarchical Groups:** Materialized Path implementation for extremely fast tree traversal and inheritance queries.
+- ⚡ **High-Performance "Effective" Models:** 
+    - Don't waste time calculating permissions in Java loops. 
+    - OpenRBAC uses optimized database sub-selects to union all permission sources (Direct, Role, Group, Group-Role) into a single, queryable virtual table.
+    - Instantly know *exactly* why a user has a permission (Source Group, Assignment Type, e.t.c).
+- ⏳ **Temporary Access:** Built-in support for expiry dates on all security relationships.
+- 🛡️ **Annotation-Driven Security:** Secure your Spring Boot endpoints easily with custom annotations.
+- 🔎 **Deep Search API:** Filter roles and permissions not just by name, but by how they were assigned (`assignmentType`), when they expire, who assigned them, and more.
 
 ---
 
@@ -52,8 +61,9 @@ OpenRBAC is a high-performance, developer-friendly **Role-Based Access Control (
 - **Language:** Java 17+
 - **Security:** Spring Security & Keycloak (OpenID Connect)
 - **Persistence:** Jakarta Persistence (JPA), Hibernate
+- **Database:** PostgreSQL (Recommended) / H2 (Testing)
 - **Build Tool:** Maven
-- **Utilities:** Lombok, MapStruct (for DTO mapping)
+- **Utilities:** Lombok, MapStruct
 
 ---
 
@@ -89,14 +99,15 @@ The API will be available at `http://localhost:8080`.
 
 ```text
 src/main/java/com/open/rbac/openrbac/
-├── annotations      # Security & utility annotations
-├── aspects          # AOP aspects for security checks
+├── annotations      # Security annotations (@RequireAnyRole)
 ├── controllers      # RESTful API Endpoints
 ├── dtos             # Data Transfer Objects
-├── models           # JPA Entities (User, Role, Permission, etc.)
-├── repositories     # Data access layer
-├── services         # Business logic layer
-└── specifications   # JPA Specifications for advanced querying
+├── models           # JPA Entities & Immutable Views (@Subselect)
+│   ├── UserEffectiveRole.java       # Unified view of all user roles
+│   └── UserEffectivePermission.java # Unified view of all user permissions
+├── repositories     # Spring Data Repositories
+├── services         # Business Logic Service Layer
+└── specifications   # JPA Specifications for dynamic filtering
 ```
 
 ---
@@ -105,12 +116,22 @@ src/main/java/com/open/rbac/openrbac/
 
 | Endpoint | Method | Description |
 | :--- | :--- | :--- |
+| **Realms** |
 | `/api/v1/realms` | `GET/POST` | Manage Realms (Multi-tenancy) |
+| **Users** |
 | `/api/v1/realms/{id}/users` | `GET` | List users in a realm |
-| `/api/v1/realms/.../roles` | `GET/POST` | Manage roles and permissions |
-| `/api/v1/realms/.../groups` | `GET/POST` | Manage hierarchical groups |
-| `/api/v1/realms/.../users/{id}/roles` | `POST` | Assign roles to users (with expiry) |
-| `/api/v1/realms/.../users/{id}/permissions` | `GET` | List direct user permissions |
+| **Roles & Permissions** |
+| `/api/v1/realms/{id}/users/{uid}/roles` | `GET` | Get **Effective** Roles (Direct + Group inherited) |
+| `/api/v1/realms/{id}/users/{uid}/permissions` | `GET` | Get **Effective** Permissions (Direct + Role + Group + GroupRole) |
+| `/api/v1/realms/{id}/users/{uid}/check-permission` | `POST` | Boolean check if user has specific access |
+| **Groups** |
+| `/api/v1/realms/{id}/groups` | `GET/POST` | Manage hierarchical groups |
+
+You can filter effective roles and permissions using query parameters like:
+- `?assignmentType=GROUP` (See only inherited items)
+- `?assignmentType=DIRECT` (See only direct assignments)
+- `?expiryDateAfter=2024-01-01`
+- `?isActive=true`
 
 ---
 

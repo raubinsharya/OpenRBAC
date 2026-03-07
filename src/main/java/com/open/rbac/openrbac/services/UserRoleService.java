@@ -13,6 +13,7 @@ import com.open.rbac.openrbac.repositories.UserRoleRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requests.AddUserRolesRequest;
 import com.open.rbac.openrbac.requests.RemoveUserRolesRequest;
+import com.open.rbac.openrbac.requests.UpdateUserRolesExpiryRequest;
 import com.open.rbac.openrbac.requestParams.UserRoleFilterRequest;
 import com.open.rbac.openrbac.specifications.UserEffectiveRoleSpecification;
 import com.open.rbac.openrbac.specifications.UserSpecification;
@@ -23,7 +24,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 
@@ -38,14 +38,16 @@ public class UserRoleService {
     private final UserEffectiveRoleRepository userEffectiveRoleRepository;
 
     @Transactional
-    @RequireAnyRole(value = { "realm-admin", "group-admin" })
-    public void addRolesToUser(Long realmId, Long userId, AddUserRolesRequest request) {
-        User user = userRepository.findOne(Specification.allOf(
-                UserSpecification.hasUserId(userId, realmId)))
+    // @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    public void addRolesToUser(String realmIdentifier, Long userId, AddUserRolesRequest request) {
+        User user = userRepository.findOne(
+                Specification.allOf(
+                        UserSpecification.hasUserId(userId, realmIdentifier),
+                        UserSpecification.includeRealm(true)))
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         final List<Role> validRoles = roleRepository
-                .findAllByIdInAndRealm_Id(Objects.requireNonNull(request.getRoleIds()), realmId);
+                .findAllByIdInAndRealm_Id(Objects.requireNonNull(request.getRoleIds()), user.getRealm().getId());
 
         // Identify IDs that are either completely missing or belong to another realm
         List<Long> validRoleIds = validRoles.stream().map(Role::getId).toList();
@@ -58,20 +60,24 @@ public class UserRoleService {
         }
 
         List<Long> existingRoleIds = userRoleRepository.findExistingRoleIds(userId, request.getRoleIds());
-        if (!existingRoleIds.isEmpty()) {
-            throw new IllegalArgumentException("User already has roles " + existingRoleIds);
+        List<Role> rolesToAssign = validRoles.stream()
+                .filter(r -> !existingRoleIds.contains(r.getId()))
+                .toList();
+
+        if (rolesToAssign.isEmpty()) {
+            return;
         }
 
         // Get current user (assignedBy)
         final User assignedBy = SecurityUtils.getAuthenticatedUser(jwt -> {
-            String username = jwt.getClaimAsString("preferred_username");
-            if (username != null) {
-                return userRepository.findByUsername(username).orElse(null);
+            String keyCloakUserId = jwt.getSubject();
+            if (keyCloakUserId != null) {
+                return userRepository.findByKeycloakUserId(keyCloakUserId).orElse(null);
             }
             return null;
         });
 
-        List<UserRole> userRoles = validRoles.stream().map(r -> UserRole.builder()
+        List<UserRole> userRoles = rolesToAssign.stream().map(r -> UserRole.builder()
                 .user(user)
                 .role(r)
                 .assignedBy(assignedBy)
@@ -83,35 +89,53 @@ public class UserRoleService {
     }
 
     @Transactional
-    @RequireAnyRole(value = { "realm-admin", "group-admin" })
-    public void removeRolesFromUser(Long realmId, Long userId, RemoveUserRolesRequest request) {
+    // @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    public void removeRolesFromUser(String realmId, Long userId, RemoveUserRolesRequest request) {
         // Verify user exists in realm
-        boolean userExists = userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
+        boolean userExists = userRepository.exists(
+                Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
         if (!userExists) {
             throw new EntityNotFoundException("User not found");
         }
 
         List<Long> existingRoleIds = userRoleRepository.findExistingRoleIds(userId, request.getRoleIds());
-        if (existingRoleIds.size() != request.getRoleIds().size()) {
-            request.getRoleIds().removeAll(new HashSet<>(existingRoleIds));
-            throw new EntityNotFoundException("Roles are not assigned to this user: " + request.getRoleIds());
+
+        if (!existingRoleIds.isEmpty()) {
+            userRoleRepository.deleteByUserIdAndRoleIdIn(userId, existingRoleIds);
+        }
+    }
+
+    @Transactional
+    public void updateUserRolesExpiry(String realmId, Long userId, UpdateUserRolesExpiryRequest request) {
+        boolean userExists = userRepository.exists(
+                Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
+        if (!userExists) {
+            throw new EntityNotFoundException("User not found");
         }
 
-        userRoleRepository.deleteByUserIdAndRoleIdIn(userId, existingRoleIds);
+        List<UserRole> existingAssignments = userRoleRepository.findByUserIdAndRoleIdIn(userId, request.getRoleIds());
+
+        if (existingAssignments.isEmpty()) {
+            throw new EntityNotFoundException("No existing roles found to update");
+        }
+
+        existingAssignments.forEach(assignment -> assignment.setExpiryDate(request.getExpiryDate()));
+        userRoleRepository.saveAll(existingAssignments);
     }
 
     @Transactional(readOnly = true)
-    public PagedResponse<UserRoleDTO> getUserRoles(Long realmId, Long userId, UserRoleFilterRequest filter) {
+    public PagedResponse<UserRoleDTO> getUserRoles(String realmIdentifier, Long userId, UserRoleFilterRequest filter) {
         // 1. Check User Existence
-        boolean userExists = userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
+        Specification<User> userSpecification = Specification
+                .allOf(UserSpecification.hasUserId(userId, realmIdentifier));
+        boolean userExists = userRepository.exists(userSpecification);
         if (!userExists) {
             throw new EntityNotFoundException("User not found");
         }
 
         // 2. Fetch Effective User Roles (Direct + Group)
         Specification<UserEffectiveRole> spec = Specification.allOf(
-                UserEffectiveRoleSpecification.ofUser(userId, realmId),
-                UserEffectiveRoleSpecification.isNotExpired(),
+                UserEffectiveRoleSpecification.ofUser(userId, realmIdentifier),
                 UserEffectiveRoleSpecification.hasRoleName(filter.getRoleName()),
                 UserEffectiveRoleSpecification.hasRoleStatus(filter.getRoleStatus()),
                 UserEffectiveRoleSpecification.hasUserStatus(filter.getUserStatus()),
@@ -128,20 +152,18 @@ public class UserRoleService {
     }
 
     @Transactional(readOnly = true)
-    public boolean hasRole(Long realmId, Long userId, Long roleId, String roleName) {
+    public boolean hasRole(String realmIdentifier, Long userId, Long roleId, String roleName) {
         if (roleId == null && (roleName == null || roleName.isEmpty())) {
             throw new IllegalArgumentException("Either roleId or roleName must be provided");
         }
 
         // Verify user exists
-        boolean userExists = userRepository.exists(Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
-        if (!userExists) {
-            throw new EntityNotFoundException("User not found");
-        }
+        userRepository.findOne(Specification.allOf(UserSpecification.hasUserId(userId, realmIdentifier)))
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
 
         // Check against Effective Roles
         Specification<UserEffectiveRole> spec = Specification.allOf(
-                UserEffectiveRoleSpecification.ofUser(userId, realmId),
+                UserEffectiveRoleSpecification.ofUser(userId, realmIdentifier),
                 UserEffectiveRoleSpecification.isNotExpired(),
                 UserEffectiveRoleSpecification.isActive(true));
 

@@ -11,9 +11,15 @@ import com.open.rbac.openrbac.models.Realm;
 import com.open.rbac.openrbac.repositories.PermissionRepository;
 import com.open.rbac.openrbac.repositories.RealmRepository;
 import com.open.rbac.openrbac.requests.StandardPermission;
+import com.open.rbac.openrbac.requests.UpdatePermissionRequest;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.PermissionSpecification;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import com.open.rbac.openrbac.models.User;
+import com.open.rbac.openrbac.repositories.UserRepository;
+import com.open.rbac.openrbac.utils.ParsingUtils;
+import com.open.rbac.openrbac.utils.SecurityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.retry.annotation.Backoff;
@@ -25,6 +31,7 @@ import java.net.ConnectException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -36,12 +43,13 @@ public class PermissionService {
 
         private final PermissionRepository permissionRepository;
         private final RealmRepository realmRepository;
+        private final UserRepository userRepository;
 
         @Transactional(readOnly = true)
-        public PagedResponse<PermissionDTO> getAllPermissions(Long realmId,
+        public PagedResponse<PermissionDTO> getAllPermissions(String realmIdentifier,
                         PermissionFilterRequest permissionFilterRequest) {
                 Specification<Permission> spec = Specification
-                                .allOf(PermissionSpecification.hasRealm(realmId))
+                                .allOf(PermissionSpecification.hasRealm(realmIdentifier))
                                 .and(PermissionSpecification.hasStatus(permissionFilterRequest.getStatus())
                                                 .and(PermissionSpecification.searchByNameIgnoreCase(
                                                                 permissionFilterRequest.getName()))
@@ -49,16 +57,20 @@ public class PermissionService {
                                                 .and(PermissionSpecification
                                                                 .hasAction(permissionFilterRequest.getAction()))
                                                 .and(PermissionSpecification
-                                                                .hasResource(permissionFilterRequest.getResource())));
+                                                                .hasResource(permissionFilterRequest.getResource()))
+                                                .and(PermissionSpecification
+                                                                .hasCreatedBy(permissionFilterRequest.getCreatedBy()))
+                                                .and(PermissionSpecification.fetchWithCreatedBy()));
                 return PagedResponse.fromPage(permissionRepository.findAll(spec, permissionFilterRequest.toPageable()),
                                 PermissionDTO::from);
         }
 
         @Transactional(readOnly = true)
-        public PermissionDTO getPermissionById(Long realmId, Long permissionId) {
+        public PermissionDTO getPermissionById(String realmIdentifier, Long permissionId) {
                 Specification<Permission> spec = Specification
-                                .allOf(PermissionSpecification.hasRealm(realmId))
-                                .and(PermissionSpecification.hasId(permissionId));
+                                .allOf(PermissionSpecification.hasRealm(realmIdentifier))
+                                .and(PermissionSpecification.hasId(permissionId))
+                                .and(PermissionSpecification.fetchWithCreatedBy());
                 return PermissionDTO.from(permissionRepository.findOne(spec).orElse(null));
         }
 
@@ -66,10 +78,23 @@ public class PermissionService {
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
         @RequireAnyRole(value = { "realm-admin" })
         @Transactional
-        public Permission createPermission(long realmId, Permission permission) {
-                Realm realm = realmRepository.findById(realmId)
-                                .orElseThrow(() -> new IllegalArgumentException("Realm not found"));
+        public Permission createPermission(String realmIdentifier, Permission permission) {
+                Specification<Realm> spec = com.open.rbac.openrbac.specifications.RealmSpecification
+                                .hasIdOrName(realmIdentifier);
+                Realm realm = realmRepository.findOne(spec)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Realm " + realmIdentifier + " not found"));
                 permission.setRealm(realm);
+
+                final User createdBy = SecurityUtils.getAuthenticatedUser(jwt -> {
+                        String sub = jwt.getSubject();
+                        if (sub != null) {
+                                return userRepository.findByKeycloakUserId(sub).orElse(null);
+                        }
+                        return null;
+                });
+                permission.setCreatedBy(createdBy);
+
                 return permissionRepository.save(permission);
         }
 
@@ -78,11 +103,22 @@ public class PermissionService {
         @RequireAnyRole(value = { "realm-admin" })
         @Transactional
         public ArrayList<PermissionDTO> createStandardPermission(
-                        long realmId,
+                        String realmIdentifier,
                         @Valid StandardPermission standardPermission) {
 
-                Realm realm = realmRepository.findById(realmId)
-                                .orElseThrow(() -> new IllegalArgumentException("Realm not found"));
+                final User creator = SecurityUtils.getAuthenticatedUser(jwt -> {
+                        String sub = jwt.getSubject();
+                        if (sub != null) {
+                                return userRepository.findByKeycloakUserId(sub).orElse(null);
+                        }
+                        return null;
+                });
+
+                Specification<Realm> spec = com.open.rbac.openrbac.specifications.RealmSpecification
+                                .hasIdOrName(realmIdentifier);
+                Realm realm = realmRepository.findOne(spec)
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Realm " + realmIdentifier + " not found"));
 
                 String resource = standardPermission.resource().toUpperCase();
 
@@ -102,7 +138,7 @@ public class PermissionService {
 
                 // 2. Fetch existing permissions in ONE query
                 Set<String> existing = permissionRepository
-                                .findExistingNames(realmId, permissionNames);
+                                .findExistingNames(realm.getId(), permissionNames);
 
                 // 3. Build only missing permissions
                 List<Permission> toInsert = permissionMap.entrySet().stream()
@@ -110,6 +146,7 @@ public class PermissionService {
                                 .map(e -> {
                                         Permission p = new Permission();
                                         p.setRealm(realm);
+                                        p.setCreatedBy(creator);
                                         p.setName(e.getKey());
                                         p.setResource(resource);
                                         p.setAction(e.getValue().name().toUpperCase());
@@ -131,19 +168,67 @@ public class PermissionService {
                 return saved.stream().map(PermissionDTO::from).collect(Collectors.toCollection(ArrayList::new));
         }
 
-        public PagedResponse<String> getResources(Long realmId, ResourceFilterRequest resourceFilterRequest) {
+        public PagedResponse<String> getResources(String realmIdentifier, ResourceFilterRequest resourceFilterRequest) {
                 resourceFilterRequest.setSortBy("resource");
+                Long realmId = ParsingUtils.safeParseLong(realmIdentifier);
                 var resources = permissionRepository.findDistinctResources(
                                 realmId,
+                                realmIdentifier,
                                 resourceFilterRequest.toPageable());
                 return PagedResponse.fromPage(resources, String::valueOf);
         }
 
-        public PagedResponse<String> getActions(Long realmId, ResourceFilterRequest resourceFilterRequest) {
+        public PagedResponse<String> getActions(String realmIdentifier, ResourceFilterRequest resourceFilterRequest) {
                 resourceFilterRequest.setSortBy("action");
+                Long realmId = ParsingUtils.safeParseLong(realmIdentifier);
                 var resources = permissionRepository.findDistinctActions(
                                 realmId,
+                                realmIdentifier,
                                 resourceFilterRequest.toPageable());
                 return PagedResponse.fromPage(resources, String::valueOf);
+        }
+
+        @Retryable(retryFor = { ConnectException.class,
+                        TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
+        @RequireAnyRole(value = { "realm-admin" })
+        @Transactional
+        public PermissionDTO updatePermission(String realmIdentifier, Long id, UpdatePermissionRequest updateData) {
+                Permission existing = getPermissionOrThrow(realmIdentifier, id);
+
+                existing.setName(updateData.name());
+                existing.setResource(updateData.resource());
+                existing.setAction(updateData.action());
+                existing.setDescription(updateData.description());
+                if (updateData.status() != null) {
+                        existing.setStatus(updateData.status());
+                }
+
+                Permission saved = permissionRepository.save(existing);
+                return PermissionDTO.from(saved);
+        }
+
+        @Retryable(retryFor = { ConnectException.class,
+                        TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
+        @RequireAnyRole(value = { "realm-admin" })
+        @Transactional
+        public PermissionDTO patchPermission(String realmIdentifier, Long id, UpdatePermissionRequest patchData) {
+                Permission existing = getPermissionOrThrow(realmIdentifier, id);
+
+                Optional.ofNullable(patchData.name()).ifPresent(existing::setName);
+                Optional.ofNullable(patchData.resource()).ifPresent(existing::setResource);
+                Optional.ofNullable(patchData.action()).ifPresent(existing::setAction);
+                Optional.ofNullable(patchData.description()).ifPresent(existing::setDescription);
+                Optional.ofNullable(patchData.status()).ifPresent(existing::setStatus);
+
+                Permission saved = permissionRepository.save(existing);
+                return PermissionDTO.from(saved);
+        }
+
+        private Permission getPermissionOrThrow(String realmIdentifier, Long id) {
+                Specification<Permission> spec = Specification
+                                .allOf(PermissionSpecification.hasRealm(realmIdentifier))
+                                .and(PermissionSpecification.hasId(id));
+                return permissionRepository.findOne(spec)
+                                .orElseThrow(() -> new EntityNotFoundException("Permission not found with id: " + id));
         }
 }

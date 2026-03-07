@@ -15,21 +15,46 @@ import java.util.List;
 
 public class GroupMemberSpecification {
 
-    public static Specification<UserGroup> ofGroup(Long groupId, Long realmId) {
+    @SuppressWarnings("unchecked")
+    public static Specification<UserGroup> ofGroup(Long groupId, String realmIdentifier) {
         return (root, query, cb) -> {
-            if (groupId == null || realmId == null)
+            if (groupId == null || realmIdentifier == null)
                 return null;
-            var groupJoin = root.join("group", JoinType.INNER);
-            var groupRealmJoin = groupJoin.join("realm", JoinType.INNER);
-            var userRealmJoin = root.join("user", JoinType.INNER).join("realm", JoinType.INNER);
+            // Determine if valid content query for fetching
+            boolean isContentQuery = query != null && UserGroup.class.equals(query.getResultType());
 
-            root.fetch("group", JoinType.INNER);
-            root.fetch("user", JoinType.INNER);
-            root.fetch("assignedBy", JoinType.LEFT);
+            jakarta.persistence.criteria.Join<Object, Object> groupJoin;
+            jakarta.persistence.criteria.Join<Object, Object> userJoin;
+
+            if (query != null) {
+                query.distinct(true);
+            }
+
+            if (isContentQuery) {
+                groupJoin = (jakarta.persistence.criteria.Join<Object, Object>) root.fetch("group", JoinType.INNER);
+                userJoin = (jakarta.persistence.criteria.Join<Object, Object>) root.fetch("user", JoinType.INNER);
+                root.fetch("assignedBy", JoinType.LEFT);
+            } else {
+                groupJoin = root.join("group", JoinType.INNER);
+                userJoin = root.join("user", JoinType.INNER);
+            }
+
+            var groupRealmJoin = groupJoin.join("realm", JoinType.INNER);
+            var userRealmJoin = userJoin.join("realm", JoinType.INNER);
 
             Predicate groupPredicate = cb.equal(groupJoin.get("id"), groupId);
-            Predicate groupRealmPredicate = cb.equal(groupRealmJoin.get("id"), realmId);
-            Predicate userRealmPredicate = cb.equal(userRealmJoin.get("id"), realmId);
+
+            Long realmId = com.open.rbac.openrbac.utils.ParsingUtils.safeParseLong(realmIdentifier);
+            Predicate groupRealmPredicate;
+            Predicate userRealmPredicate;
+
+            if (realmId != null) {
+                groupRealmPredicate = cb.equal(groupRealmJoin.get("id"), realmId);
+                userRealmPredicate = cb.equal(userRealmJoin.get("id"), realmId);
+            } else {
+                groupRealmPredicate = cb.equal(groupRealmJoin.get("name"), realmIdentifier);
+                userRealmPredicate = cb.equal(userRealmJoin.get("name"), realmIdentifier);
+            }
 
             return cb.and(groupPredicate, groupRealmPredicate, userRealmPredicate);
         };

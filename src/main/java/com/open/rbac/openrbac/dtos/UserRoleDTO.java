@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import com.open.rbac.openrbac.enums.EntityStatus;
+import com.open.rbac.openrbac.models.GroupRole;
+import com.open.rbac.openrbac.models.UserEffectiveRole;
+import com.open.rbac.openrbac.models.UserGroup;
 import com.open.rbac.openrbac.models.UserRole;
 import lombok.Builder;
 
@@ -49,8 +52,8 @@ public record UserRoleDTO(
                 .build();
     }
 
-    public static UserRoleDTO from(com.open.rbac.openrbac.models.GroupRole groupRole,
-            com.open.rbac.openrbac.models.UserGroup userGroup,
+    public static UserRoleDTO from(GroupRole groupRole,
+            UserGroup userGroup,
             Long effectiveSourceGroupId) {
         if (groupRole == null || userGroup == null)
             return null;
@@ -91,7 +94,7 @@ public record UserRoleDTO(
                 .build();
     }
 
-    public static UserRoleDTO from(com.open.rbac.openrbac.models.UserEffectiveRole effectiveRole) {
+    public static UserRoleDTO from(UserEffectiveRole effectiveRole) {
         if (effectiveRole == null)
             return null;
         return UserRoleDTO.builder()

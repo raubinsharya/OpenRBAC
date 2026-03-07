@@ -22,14 +22,16 @@ public record UserDTO(
         String displayName,
         LocalDateTime createdAt,
         LocalDateTime updatedAt,
+        LocalDateTime accountExpiryDate,
+        boolean isAccountExpired,
         RealmDTO realm,
         Set<RoleDTO> roles,
-        Set<PermissionDTO> permissions
-) {
+        Set<PermissionDTO> permissions) {
 
     // Main method with flags
     public static UserDTO from(User user, boolean includeRealm) {
-        if (user == null) return null;
+        if (user == null)
+            return null;
         return UserDTO.builder()
                 .id(user.getId())
                 .keycloakUserId(user.getKeycloakUserId())
@@ -41,6 +43,8 @@ public record UserDTO(
                 .displayName(user.getDisplayName())
                 .createdAt(user.getCreatedAt())
                 .updatedAt(user.getUpdatedAt())
+                .accountExpiryDate(user.getAccountExpiryDate())
+                .isAccountExpired(user.isAccountExpired())
                 .realm(includeRealm
                         ? Optional.ofNullable(user.getRealm()).map(RealmDTO::from).orElse(null)
                         : null)

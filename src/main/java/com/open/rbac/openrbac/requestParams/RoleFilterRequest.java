@@ -3,7 +3,6 @@ package com.open.rbac.openrbac.requestParams;
 import lombok.*;
 import lombok.experimental.SuperBuilder;
 
-
 @Data
 
 @NoArgsConstructor
@@ -15,4 +14,6 @@ public class RoleFilterRequest extends BaseFilter {
     private String description;
     private String status;
     private Boolean isSystemRole;
+    private String assignmentType;
+    private String createdBy;
 }

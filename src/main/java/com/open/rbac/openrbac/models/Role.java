@@ -72,6 +72,11 @@ public class Role {
         @JsonIgnore
         private Realm realm;
 
+        @ManyToOne(fetch = FetchType.LAZY)
+        @JoinColumn(name = "created_by")
+        @JsonIgnore
+        private User createdBy;
+
         @OneToMany(mappedBy = "role", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
         @JsonIgnore
         @ToString.Exclude

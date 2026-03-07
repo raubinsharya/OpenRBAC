@@ -2,6 +2,7 @@ package com.open.rbac.openrbac.repositories;
 
 import com.open.rbac.openrbac.models.UserRole;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
@@ -18,7 +19,11 @@ public interface UserRoleRepository extends JpaRepository<UserRole, Long>, JpaSp
 
     void deleteByUserIdAndRoleId(Long userId, Long roleId);
 
+    @Modifying
+    @Query("DELETE FROM UserRole ur WHERE ur.user.id = :userId AND ur.role.id IN :roleIds")
     void deleteByUserIdAndRoleIdIn(Long userId, Collection<Long> roleIds);
+
+    List<UserRole> findByUserIdAndRoleIdIn(Long userId, Collection<Long> roleIds);
 
     boolean existsByUserIdAndRoleId(Long userId, Long roleId);
 

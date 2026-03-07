@@ -2,6 +2,7 @@ package com.open.rbac.openrbac.controllers;
 
 import com.open.rbac.openrbac.requestParams.GroupFilterRequest;
 import com.open.rbac.openrbac.requests.CreateGroupRequest;
+import com.open.rbac.openrbac.requests.UpdateGroupRequest;
 import com.open.rbac.openrbac.services.GroupService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +18,7 @@ public class GroupController {
 
     @GetMapping
     public ResponseEntity<?> getAllGroups(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @ModelAttribute GroupFilterRequest groupFilterRequest) {
 
         var groups = groupService.getAllGroups(realmId, groupFilterRequest);
@@ -26,7 +27,7 @@ public class GroupController {
 
     @GetMapping("{id}")
     public ResponseEntity<?> getGroupById(@PathVariable Long id,
-            @PathVariable Long realmId) {
+            @PathVariable String realmId) {
 
         var group = groupService.getGroupById(realmId, id);
         return ResponseEntity.ok(group);
@@ -34,15 +35,31 @@ public class GroupController {
 
     @PostMapping
     public ResponseEntity<?> createGroup(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @Valid @RequestBody CreateGroupRequest createGroupRequest) {
         return ResponseEntity.ok(groupService.createGroup(realmId, createGroupRequest));
     }
 
     @GetMapping("/{id}/hierarchy")
     public ResponseEntity<?> getHierarchy(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long id) {
         return ResponseEntity.ok(groupService.getHierarchy(realmId, id));
+    }
+
+    @PutMapping("{id}")
+    public ResponseEntity<?> updateGroup(
+            @PathVariable String realmId,
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateGroupRequest request) {
+        return ResponseEntity.ok(groupService.updateGroup(realmId, id, request));
+    }
+
+    @PatchMapping("{id}")
+    public ResponseEntity<?> patchGroup(
+            @PathVariable String realmId,
+            @PathVariable Long id,
+            @RequestBody UpdateGroupRequest request) {
+        return ResponseEntity.ok(groupService.patchGroup(realmId, id, request));
     }
 }

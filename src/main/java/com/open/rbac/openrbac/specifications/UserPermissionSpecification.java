@@ -12,21 +12,31 @@ import java.util.List;
 
 public class UserPermissionSpecification {
 
+    @SuppressWarnings("unchecked")
     public static Specification<UserPermission> ofUser(Long userId, Long realmId) {
         return (root, query, cb) -> {
             if (userId == null || realmId == null) {
                 return null;
             }
-            var userJoin = root.join("user", JoinType.INNER);
+
+            // Determine if valid content query for fetching
+            boolean isContentQuery = query != null && UserPermission.class.equals(query.getResultType());
+
+            jakarta.persistence.criteria.Join<Object, Object> userJoin;
+            jakarta.persistence.criteria.Join<Object, Object> permissionJoin;
+
+            if (isContentQuery) {
+                userJoin = (jakarta.persistence.criteria.Join<Object, Object>) root.fetch("user", JoinType.INNER);
+                permissionJoin = (jakarta.persistence.criteria.Join<Object, Object>) root.fetch("permission",
+                        JoinType.INNER);
+                root.fetch("assignedBy", JoinType.LEFT);
+            } else {
+                userJoin = root.join("user", JoinType.INNER);
+                permissionJoin = root.join("permission", JoinType.INNER);
+            }
+
             var userRealmJoin = userJoin.join("realm", JoinType.INNER);
-
-            var permissionJoin = root.join("permission", JoinType.INNER);
             var permissionRealmJoin = permissionJoin.join("realm", JoinType.INNER);
-
-            // Fetch relations to avoid N+1 issues
-            root.fetch("user", JoinType.INNER);
-            root.fetch("permission", JoinType.INNER);
-            root.fetch("assignedBy", JoinType.LEFT);
 
             return cb.and(
                     cb.equal(userJoin.get("id"), userId),

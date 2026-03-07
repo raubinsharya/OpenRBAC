@@ -6,18 +6,20 @@ import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.dtos.PermissionDTO;
 import com.open.rbac.openrbac.dtos.RoleDTO;
 import com.open.rbac.openrbac.dtos.UserDTO;
-import com.open.rbac.openrbac.models.Permission;
-import com.open.rbac.openrbac.models.Role;
 import com.open.rbac.openrbac.models.User;
-import com.open.rbac.openrbac.repositories.PermissionRepository;
-import com.open.rbac.openrbac.repositories.RoleRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
-import com.open.rbac.openrbac.specifications.PermissionSpecification;
-import com.open.rbac.openrbac.specifications.RoleSpecification;
+import com.open.rbac.openrbac.dtos.UserPermissionDTO;
+import com.open.rbac.openrbac.dtos.UserRoleDTO;
+import com.open.rbac.openrbac.models.UserEffectivePermission;
+import com.open.rbac.openrbac.models.UserEffectiveRole;
+import com.open.rbac.openrbac.repositories.UserEffectivePermissionRepository;
+import com.open.rbac.openrbac.repositories.UserEffectiveRoleRepository;
+import com.open.rbac.openrbac.specifications.UserEffectivePermissionSpecification;
+import com.open.rbac.openrbac.specifications.UserEffectiveRoleSpecification;
 import com.open.rbac.openrbac.specifications.UserSpecification;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
@@ -29,44 +31,185 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class MeService {
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
-    private final PermissionRepository permissionRepository;
 
-    public Optional<UserDTO> getUser(String username, boolean includeRealm) {
+    private final UserEffectiveRoleRepository userEffectiveRoleRepository;
+    private final UserEffectivePermissionRepository userEffectivePermissionRepository;
+
+    public Optional<UserDTO> getUser(String keycloakUserId, boolean includeRealm) {
         Specification<User> userSpecification = Specification.allOf(
                 UserSpecification.hasStatus("active"),
+                UserSpecification.hasKeycloakUserId(keycloakUserId),
                 UserSpecification.includeRealm(includeRealm));
-        return userRepository.findAll(userSpecification).stream().findFirst().map(u -> UserDTO.from(u, includeRealm));
+        return userRepository.findAll(userSpecification).stream().findFirst()
+                .map(u -> UserDTO.from(u, includeRealm));
     }
 
-    public PagedResponse<RoleDTO> getMeRoles(String userName, RoleFilterRequest filter) {
-        Specification<Role> spec = Specification.allOf(RoleSpecification.ofUser(userName))
-                .and(RoleSpecification.searchByNameIgnoreCase(filter.getName()))
-                .and(RoleSpecification.hasStatus(filter.getStatus()))
-                .and(RoleSpecification.isSystemRole(filter.getIsSystemRole())
-                        .and(BaseSpecification.withBaseFilters(filter)));
-        Pageable pageable = filter.toPageable();
-        return PagedResponse.fromPage(roleRepository.findAll(spec, pageable), RoleDTO::from);
+    public List<RoleDTO> getMeRoles(String keycloakUserId) {
+        User user = userRepository.findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        Long realmId = user.getRealm().getId();
+        Specification<UserEffectiveRole> spec = Specification.allOf(
+                UserEffectiveRoleSpecification.ofUser(user.getId(), String.valueOf(realmId)),
+                UserEffectiveRoleSpecification.isNotExpired(),
+                UserEffectiveRoleSpecification.isActive(true));
+        return userEffectiveRoleRepository.findAll(spec).stream()
+                .map(UserRoleDTO::from)
+                .map(role -> new RoleDTO(
+                        role.roleId(),
+                        role.roleName(),
+                        null,
+                        role.roleStatus(),
+                        false, // System role info not available in effective view easily,
+                        // defaulting false or
+                        // need to fetch
+                        role.assignedAt(),
+                        null,
+                        null))
+                .collect(Collectors.toList());
+
     }
 
-    public PagedResponse<PermissionDTO> getMePermissions(String userName, PermissionFilterRequest filter) {
-        Specification<Permission> spec = Specification.allOf(PermissionSpecification.ofUser(userName))
-                .and(PermissionSpecification.searchByNameIgnoreCase(filter.getName()))
-                .and(PermissionSpecification.hasStatus(filter.getStatus()))
-                .and(PermissionSpecification.hasResource(filter.getResource()))
-                .and(PermissionSpecification.hasAction(filter.getAction()))
-                .and(BaseSpecification.withBaseFilters(filter));
-        Pageable pageable = filter.toPageable();
-        return PagedResponse.fromPage(permissionRepository.findAll(spec, pageable), PermissionDTO::from);
+    public boolean hasAnyRole(String keycloakUserId, List<String> roleNames) {
+        User user = userRepository.findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        Long realmId = user.getRealm().getId();
+        Specification<UserEffectiveRole> spec = Specification.allOf(
+                UserEffectiveRoleSpecification.ofUser(user.getId(), String.valueOf(realmId)),
+                UserEffectiveRoleSpecification.isNotExpired(),
+                UserEffectiveRoleSpecification.isActive(true),
+                UserEffectiveRoleSpecification.hasRoleNameIn(roleNames));
+        return userEffectiveRoleRepository.exists(spec);
     }
 
-    public List<RoleDTO> getMeRoles(String userName) {
-        Specification<Role> spec = Specification.allOf(RoleSpecification.ofUser(userName));
-        return roleRepository.findAll(spec).stream().map(RoleDTO::from).collect(Collectors.toList());
+    public boolean hasAllRoles(String keycloakUserId, List<String> roleNames) {
+        Specification<UserEffectiveRole> spec = Specification.allOf(
+                UserEffectiveRoleSpecification.ofUser(keycloakUserId),
+                UserEffectiveRoleSpecification.isNotExpired(),
+                UserEffectiveRoleSpecification.isActive(true),
+                UserEffectiveRoleSpecification.hasRoleNameIn(roleNames));
+
+        List<UserEffectiveRole> matchingRoles = userEffectiveRoleRepository.findAll(spec);
+        long uniqueMatchingRoles = matchingRoles.stream()
+                .map(r -> r.getRole().getName())
+                .distinct()
+                .count();
+        return uniqueMatchingRoles >= roleNames.size();
     }
 
-    public List<PermissionDTO> getMePermissions(String userName) {
-        Specification<Permission> spec = Specification.allOf(PermissionSpecification.ofUser(userName));
-        return permissionRepository.findAll(spec).stream().map(PermissionDTO::from).collect(Collectors.toList());
+    public boolean hasAnyPermission(String keycloakUserId, List<String> permissions) {
+        // Permissions are "resource:action" strings
+        User user = userRepository.findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        Long realmId = user.getRealm().getId();
+
+        for (String permString : permissions) {
+            String[] parts = permString.split(":");
+            if (parts.length != 2)
+                continue;
+            String resource = parts[0];
+            String action = parts[1];
+
+            Specification<UserEffectivePermission> spec = Specification.allOf(
+                    UserEffectivePermissionSpecification.ofUser(user.getId(), String.valueOf(realmId)),
+                    UserEffectivePermissionSpecification.isNotExpired(),
+                    UserEffectivePermissionSpecification.isActive(true),
+                    UserEffectivePermissionSpecification.hasResource(resource),
+                    UserEffectivePermissionSpecification.hasAction(action));
+            if (userEffectivePermissionRepository.exists(spec)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean hasAllPermissions(String keycloakUserId, List<String> permissions) {
+        User user = userRepository.findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        Long realmId = user.getRealm().getId();
+
+        // Using stream to check all, but could be slow if many permissions.
+        // However, usually required permissions are few (1-3).
+        for (String permString : permissions) {
+            String[] parts = permString.split(":");
+            if (parts.length != 2)
+                return false;
+            String resource = parts[0];
+            String action = parts[1];
+
+            Specification<UserEffectivePermission> spec = Specification.allOf(
+                    UserEffectivePermissionSpecification.ofUser(user.getId(), String.valueOf(realmId)),
+                    UserEffectivePermissionSpecification.isNotExpired(),
+                    UserEffectivePermissionSpecification.isActive(true),
+                    UserEffectivePermissionSpecification.hasResource(resource),
+                    UserEffectivePermissionSpecification.hasAction(action));
+
+            // If any permission is missing, return false
+            if (!userEffectivePermissionRepository.exists(spec)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public List<PermissionDTO> getMePermissions(String keycloakUserId) {
+        User user = userRepository.findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        Long realmId = user.getRealm().getId();
+        Specification<UserEffectivePermission> spec = Specification.allOf(
+                UserEffectivePermissionSpecification.ofUser(user.getId(), String.valueOf(realmId)),
+                UserEffectivePermissionSpecification.isNotExpired(),
+                UserEffectivePermissionSpecification.isActive(true));
+        return userEffectivePermissionRepository.findAll(spec).stream()
+                .map(UserPermissionDTO::from)
+                .map(perm -> new PermissionDTO(
+                        perm.permissionId(),
+                        perm.permissionName(),
+                        perm.resource(),
+                        perm.action(),
+                        null,
+                        perm.permissionStatus(),
+                        perm.assignedAt(),
+                        null,
+                        null))
+                .collect(Collectors.toList());
+    }
+
+    public PagedResponse<UserRoleDTO> getMeRoles(String keycloakUserId, RoleFilterRequest filter) {
+        // Need user ID first
+        User user = userRepository.findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        Long realmId = user.getRealm().getId();
+
+        Specification<UserEffectiveRole> spec = Specification.allOf(
+                UserEffectiveRoleSpecification.ofUser(user.getId(), String.valueOf(realmId)),
+                UserEffectiveRoleSpecification.isNotExpired(),
+                UserEffectiveRoleSpecification.hasRoleName(filter.getName()),
+                UserEffectiveRoleSpecification.isActive(true), // Only active for "me"
+                UserEffectiveRoleSpecification.assignmentType(filter.getAssignmentType()),
+                BaseSpecification.withBaseFilters(filter));
+
+        return PagedResponse.fromPage(userEffectiveRoleRepository.findAll(spec, filter.toPageable()),
+                UserRoleDTO::from);
+    }
+
+    public PagedResponse<UserPermissionDTO> getMePermissions(String keycloakUserId,
+                                                             PermissionFilterRequest filter) {
+        // Need user ID first
+        User user = userRepository.findByKeycloakUserId(keycloakUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
+        Long realmId = user.getRealm().getId();
+
+        Specification<UserEffectivePermission> spec = Specification.allOf(
+                UserEffectivePermissionSpecification.ofUser(user.getId(), String.valueOf(realmId)),
+                UserEffectivePermissionSpecification.isNotExpired(),
+                UserEffectivePermissionSpecification.hasPermissionName(filter.getName()),
+                UserEffectivePermissionSpecification.hasResource(filter.getResource()),
+                UserEffectivePermissionSpecification.hasAction(filter.getAction()),
+                UserEffectivePermissionSpecification.isActive(true), // Only active for "me"
+                UserEffectivePermissionSpecification.assignmentType(filter.getAssignmentType()),
+                BaseSpecification.withBaseFilters(filter));
+
+        return PagedResponse.fromPage(userEffectivePermissionRepository.findAll(spec, filter.toPageable()),
+                UserPermissionDTO::from);
     }
 }

@@ -3,6 +3,7 @@ package com.open.rbac.openrbac.controllers;
 import com.open.rbac.openrbac.requestParams.UserRoleFilterRequest;
 import com.open.rbac.openrbac.requests.AddUserRolesRequest;
 import com.open.rbac.openrbac.requests.RemoveUserRolesRequest;
+import com.open.rbac.openrbac.requests.UpdateUserRolesExpiryRequest;
 import com.open.rbac.openrbac.services.UserRoleService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,7 @@ public class UserRoleController {
 
     @GetMapping
     public ResponseEntity<?> getUserRoles(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @ModelAttribute @Valid UserRoleFilterRequest filter) {
         return ResponseEntity.ok(userRoleService.getUserRoles(realmId, userId, filter));
@@ -28,7 +29,7 @@ public class UserRoleController {
 
     @GetMapping("/check")
     public ResponseEntity<Map<String, Boolean>> checkUserRole(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @RequestParam(required = false) Long roleId,
             @RequestParam(required = false) String roleName) {
@@ -38,7 +39,7 @@ public class UserRoleController {
 
     @PostMapping
     public ResponseEntity<?> addRoles(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @RequestBody @Valid AddUserRolesRequest request) {
         userRoleService.addRolesToUser(realmId, userId, request);
@@ -47,10 +48,19 @@ public class UserRoleController {
 
     @DeleteMapping
     public ResponseEntity<?> removeRoles(
-            @PathVariable Long realmId,
+            @PathVariable String realmId,
             @PathVariable Long userId,
             @RequestBody @Valid RemoveUserRolesRequest request) {
         userRoleService.removeRolesFromUser(realmId, userId, request);
         return ResponseEntity.ok(Map.of("message", "Roles removed successfully"));
+    }
+
+    @PatchMapping
+    public ResponseEntity<?> updateUserRolesExpiry(
+            @PathVariable String realmId,
+            @PathVariable Long userId,
+            @RequestBody @Valid UpdateUserRolesExpiryRequest request) {
+        userRoleService.updateUserRolesExpiry(realmId, userId, request);
+        return ResponseEntity.ok(Map.of("message", "Roles expiry updated successfully"));
     }
 }

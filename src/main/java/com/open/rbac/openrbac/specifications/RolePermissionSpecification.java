@@ -12,18 +12,30 @@ import java.util.List;
 
 public class RolePermissionSpecification {
 
+    @SuppressWarnings("unchecked")
     public static Specification<RolePermission> ofRole(Long roleId, Long realmId) {
         return (root, query, cb) -> {
             if (roleId == null || realmId == null) {
                 return null;
             }
-            var roleJoin = root.join("role", JoinType.INNER);
-            var roleRealmJoin = roleJoin.join("realm", JoinType.INNER);
-            var permissionRealmJoin = root.join("permission", JoinType.INNER).join("realm", JoinType.INNER);
+            // Determine if valid content query for fetching
+            boolean isContentQuery = query != null && RolePermission.class.equals(query.getResultType());
 
-            root.fetch("role", JoinType.INNER);
-            root.fetch("permission", JoinType.INNER);
-            root.fetch("assignedBy", JoinType.LEFT);
+            jakarta.persistence.criteria.Join<Object, Object> roleJoin;
+            jakarta.persistence.criteria.Join<Object, Object> permissionJoin;
+
+            if (isContentQuery) {
+                roleJoin = (jakarta.persistence.criteria.Join<Object, Object>) root.fetch("role", JoinType.INNER);
+                permissionJoin = (jakarta.persistence.criteria.Join<Object, Object>) root.fetch("permission",
+                        JoinType.INNER);
+                root.fetch("assignedBy", JoinType.LEFT);
+            } else {
+                roleJoin = root.join("role", JoinType.INNER);
+                permissionJoin = root.join("permission", JoinType.INNER);
+            }
+
+            var roleRealmJoin = roleJoin.join("realm", JoinType.INNER);
+            var permissionRealmJoin = permissionJoin.join("realm", JoinType.INNER);
 
             return cb.and(
                     cb.equal(roleJoin.get("id"), roleId),

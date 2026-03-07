@@ -29,6 +29,8 @@ import java.time.LocalDateTime;
                ur.is_active,
                ur.assigned_by as assigned_by_id
             FROM user_roles ur
+            JOIN roles r ON ur.role_id = r.id
+            WHERE r.status = 'ACTIVE'
             UNION ALL
             SELECT
                concat('G', gr.id, 'U', ug.id) as id,
@@ -49,9 +51,13 @@ import java.time.LocalDateTime;
             JOIN groups desc_g ON ug.group_id = desc_g.id
             JOIN groups anc_g ON desc_g.path LIKE concat(anc_g.path, '%')
             JOIN group_roles gr ON gr.group_id = anc_g.id
-            WHERE (gr.group_id = ug.group_id)
-               OR (gr.allow_inheritance = true
-                   AND (gr.max_inheritance_depth IS NULL OR (desc_g.level - anc_g.level) <= gr.max_inheritance_depth))
+            JOIN roles r ON gr.role_id = r.id
+            WHERE r.status = 'ACTIVE'
+               AND desc_g.status = 'ACTIVE'
+               AND anc_g.status = 'ACTIVE'
+               AND ((gr.group_id = ug.group_id)
+                   OR (gr.allow_inheritance = true
+                       AND (gr.max_inheritance_depth IS NULL OR (desc_g.level - anc_g.level) <= gr.max_inheritance_depth)))
         """)
 @Data
 @NoArgsConstructor

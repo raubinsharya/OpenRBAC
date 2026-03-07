@@ -1,7 +1,6 @@
 package com.open.rbac.openrbac.aspects;
 
 import com.open.rbac.openrbac.annotations.RequireAnyRole;
-import com.open.rbac.openrbac.dtos.RoleDTO;
 import com.open.rbac.openrbac.services.MeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +15,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Aspect
 @Component
@@ -36,11 +34,11 @@ public class RequireAnyRoleAspect {
             throw new AccessDeniedException("User not authenticated");
         }
 
-        // 2. Extract username with null check
-        String username = jwt.getClaimAsString("preferred_username");
-        if (username == null || username.trim().isEmpty()) {
-            log.warn("Access denied: Username not found in JWT token");
-            throw new AccessDeniedException("Username not found in token");
+        // 2. Extract user ID with null check
+        String keycloakUserId = jwt.getSubject();
+        if (keycloakUserId == null || keycloakUserId.trim().isEmpty()) {
+            log.warn("Access denied: Subject not found in JWT token");
+            throw new AccessDeniedException("Subject not found in token");
         }
 
         // 3. Validate required roles
@@ -50,39 +48,24 @@ public class RequireAnyRoleAspect {
             return joinPoint.proceed();
         }
 
-        log.info("Checking roles for user: {} against required roles: {}", username, Arrays.toString(requiredRoles));
+        log.info("Checking roles for user: {} against required roles: {}", keycloakUserId,
+                Arrays.toString(requiredRoles));
 
-        // 4. Get user roles
-        List<RoleDTO> userRoles;
+        // 4. Check if user has any of the required roles
         try {
-            userRoles = meService.getMeRoles(username);
+            List<String> requiredRolesList = Arrays.asList(requiredRoles);
+            boolean hasRequiredRole = meService.hasAnyRole(keycloakUserId, requiredRolesList);
+
+            if (!hasRequiredRole) {
+                log.info("Access denied: User '{}' does not have any of the required roles: {}",
+                        keycloakUserId, Arrays.toString(requiredRoles));
+                throw new AccessDeniedException(requireAnyRole.message());
+            }
         } catch (Exception e) {
-            log.error("Failed to retrieve roles for user: {}", username, e);
-            throw new AccessDeniedException("Failed to retrieve user roles");
+            log.error("Failed to check roles for user: {}", keycloakUserId, e);
+            throw new AccessDeniedException("Failed to verify user roles");
         }
-
-        if (userRoles == null || userRoles.isEmpty()) {
-            log.info("Access denied: User '{}' has no roles assigned", username);
-            throw new AccessDeniedException(requireAnyRole.message());
-        }
-
-        // 5. Check role match (improved performance with Set)
-        List<String> requiredRolesList = Arrays.asList(requiredRoles);
-        boolean hasRequiredRole = userRoles.stream()
-                .map(RoleDTO::name)
-                .filter(roleName -> roleName != null && !roleName.trim().isEmpty())
-                .anyMatch(requiredRolesList::contains);
-
-        if (!hasRequiredRole) {
-            List<String> userRoleNames = userRoles.stream()
-                    .map(RoleDTO::name)
-                    .filter(name -> name != null && !name.trim().isEmpty())
-                    .collect(Collectors.toList());
-            log.info("Access denied: User '{}' with roles {} does not have any required roles: {}",
-                    username, userRoleNames, Arrays.toString(requiredRoles));
-            throw new AccessDeniedException(requireAnyRole.message());
-        }
-        log.info("Access granted: User '{}' has required role(s)", username);
+        log.info("Access granted: User '{}' has required role(s)", keycloakUserId);
         return joinPoint.proceed();
     }
 }

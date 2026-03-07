@@ -7,12 +7,15 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
+import jakarta.persistence.criteria.Fetch;
+import jakarta.persistence.criteria.Join;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 public class GroupEffectivePermissionSpecification {
 
+    @SuppressWarnings("unchecked")
     public static Specification<GroupEffectivePermission> ofGroup(Long groupId, Collection<Long> ancestorIds,
             Integer groupLevel, Long realmId) {
         return (root, query, cb) -> {
@@ -20,9 +23,27 @@ public class GroupEffectivePermissionSpecification {
                 return null;
             }
 
-            var groupJoin = root.join("group", JoinType.INNER);
+            // Determine if valid content query for fetching
+            boolean isContentQuery = query != null && GroupEffectivePermission.class.equals(query.getResultType());
+
+            Join<Object, Object> groupJoin;
+            Join<Object, Object> permissionJoin;
+
+            if (isContentQuery) {
+                Fetch<Object, Object> groupFetch = root.fetch("group", JoinType.INNER);
+                groupJoin = (Join<Object, Object>) groupFetch;
+
+                Fetch<Object, Object> permissionFetch = root.fetch("permission", JoinType.INNER);
+                permissionFetch.fetch("createdBy", JoinType.LEFT);
+                permissionJoin = (Join<Object, Object>) permissionFetch;
+
+                root.fetch("assignedBy", JoinType.LEFT);
+            } else {
+                groupJoin = root.join("group", JoinType.INNER);
+                permissionJoin = root.join("permission", JoinType.INNER);
+            }
+
             var groupRealmJoin = groupJoin.join("realm", JoinType.INNER);
-            var permissionJoin = root.join("permission", JoinType.INNER);
             var permissionRealmJoin = permissionJoin.join("realm", JoinType.INNER);
 
             // Direct assignment (or Role via Group) to the requested group
@@ -174,16 +195,11 @@ public class GroupEffectivePermissionSpecification {
         };
     }
 
-    public static Specification<GroupEffectivePermission> fromRole(Boolean fromRole) {
+    public static Specification<GroupEffectivePermission> assignmentType(String assignmentType) {
         return (root, query, cb) -> {
-            // If fromRole is true, we include role-based permissions (show all: DIRECT +
-            // ROLE)
-            // If fromRole is false or null, we only show DIRECT permissions (default
-            // behavior)
-            if (Boolean.TRUE.equals(fromRole)) {
+            if (assignmentType == null || assignmentType.isEmpty())
                 return null;
-            }
-            return cb.equal(root.get("assignmentType"), "DIRECT");
+            return cb.equal(root.get("assignmentType"), assignmentType.toUpperCase());
         };
     }
 }

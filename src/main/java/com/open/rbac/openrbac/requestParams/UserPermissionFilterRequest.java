@@ -26,9 +26,6 @@ public class UserPermissionFilterRequest extends BaseFilter {
     private EntityStatus userStatus;
     private Boolean isActive;
 
-    @Builder.Default
-    private boolean fromRole = false;
-
     @FlexibleDate(strategy = DateStrategy.END_OF_DAY)
     private LocalDateTime assignedAtBefore;
 

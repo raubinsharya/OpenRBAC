@@ -18,5 +18,5 @@ public class GroupPermissionFilterRequest extends BaseFilter {
     private LocalDateTime assignedAtAfter;
     private LocalDateTime expiryDateBefore;
     private LocalDateTime expiryDateAfter;
-    private Boolean fromRole;
+    private String assignmentType;
 }
