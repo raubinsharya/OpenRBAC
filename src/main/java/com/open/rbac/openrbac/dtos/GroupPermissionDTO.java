@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @Builder
 public record GroupPermissionDTO(
                 @JsonUnwrapped @JsonIgnoreProperties({
-                                "id", "status", "name", "description", "createdAt",
+                                "id", "status", "name", "createdAt",
                                 "updatedAt" }) PermissionDTO permission,
                 Long permissionId,
                 Long groupPermissionId,

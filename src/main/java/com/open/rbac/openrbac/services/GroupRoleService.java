@@ -13,6 +13,7 @@ import com.open.rbac.openrbac.repositories.RoleRepository;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requests.AddGroupRolesRequest;
 import com.open.rbac.openrbac.requests.RemoveGroupRolesRequest;
+import com.open.rbac.openrbac.requests.UpdateGroupRolesExpiryRequest;
 import com.open.rbac.openrbac.requestParams.GroupRoleFilterRequest;
 import com.open.rbac.openrbac.specifications.GroupRoleSpecification;
 import com.open.rbac.openrbac.specifications.GroupSpecification;
@@ -107,6 +108,38 @@ public class GroupRoleService {
         if (!existingRoleIds.isEmpty()) {
             groupRoleRepository.deleteByGroupIdAndRoleIdIn(groupId, existingRoleIds);
         }
+    }
+
+    @Transactional
+    public void updateGroupRolesExpiry(String realmIdentifier, Long groupId, UpdateGroupRolesExpiryRequest request) {
+        boolean groupExists = groupRepository.exists(Specification.allOf(
+                GroupSpecification.hasId(groupId),
+                GroupSpecification.hasRealm(realmIdentifier)));
+        if (!groupExists) {
+            throw new EntityNotFoundException("Group not found");
+        }
+
+        List<GroupRole> existingAssignments = groupRoleRepository.findByGroupIdAndRoleIdIn(groupId,
+                request.getRoleIds());
+
+        if (existingAssignments.isEmpty()) {
+            throw new EntityNotFoundException("No existing roles found to update");
+        }
+
+        existingAssignments.forEach(assignment -> {
+            if (request.getExpiryDate() != null
+                    || request.getAllowInheritance() == null && request.getMaxInheritanceDepth() == null) {
+                assignment.setExpiryDate(request.getExpiryDate());
+            }
+            if (request.getAllowInheritance() != null) {
+                assignment.setAllowInheritance(request.getAllowInheritance());
+                // Always update depth together with allowInheritance (null clears it)
+                assignment.setMaxInheritanceDepth(request.getMaxInheritanceDepth());
+            } else if (request.getMaxInheritanceDepth() != null) {
+                assignment.setMaxInheritanceDepth(request.getMaxInheritanceDepth());
+            }
+        });
+        groupRoleRepository.saveAll(existingAssignments);
     }
 
     @Transactional(readOnly = true)

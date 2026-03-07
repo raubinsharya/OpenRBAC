@@ -5,6 +5,7 @@ import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.requestParams.GroupPermissionFilterRequest;
 import com.open.rbac.openrbac.requests.AddGroupPermissionsRequest;
 import com.open.rbac.openrbac.requests.RemoveGroupPermissionsRequest;
+import com.open.rbac.openrbac.requests.UpdateGroupPermissionsExpiryRequest;
 import com.open.rbac.openrbac.services.GroupPermissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,6 +38,15 @@ public class GroupPermissionController {
             @Valid @RequestBody RemoveGroupPermissionsRequest request) {
         groupPermissionService.removePermissionsFromGroup(realmId, groupId, request);
         return ResponseEntity.ok(Map.of("message", "Permissions removed successfully"));
+    }
+
+    @PatchMapping
+    public ResponseEntity<?> updateGroupPermissionsExpiry(
+            @PathVariable String realmId,
+            @PathVariable Long groupId,
+            @Valid @RequestBody UpdateGroupPermissionsExpiryRequest request) {
+        groupPermissionService.updateGroupPermissionsExpiry(realmId, groupId, request);
+        return ResponseEntity.ok(Map.of("message", "Permissions expiry updated successfully"));
     }
 
     @GetMapping

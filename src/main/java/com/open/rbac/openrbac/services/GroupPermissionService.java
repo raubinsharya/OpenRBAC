@@ -16,6 +16,7 @@ import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.requestParams.GroupPermissionFilterRequest;
 import com.open.rbac.openrbac.requests.AddGroupPermissionsRequest;
 import com.open.rbac.openrbac.requests.RemoveGroupPermissionsRequest;
+import com.open.rbac.openrbac.requests.UpdateGroupPermissionsExpiryRequest;
 import com.open.rbac.openrbac.specifications.GroupEffectivePermissionSpecification;
 import com.open.rbac.openrbac.specifications.GroupSpecification;
 import com.open.rbac.openrbac.utils.SecurityUtils;
@@ -113,6 +114,39 @@ public class GroupPermissionService {
                 if (!existingPermissionIds.isEmpty()) {
                         groupPermissionRepository.deleteByGroupIdAndPermissionIdIn(groupId, existingPermissionIds);
                 }
+        }
+
+        @Transactional
+        public void updateGroupPermissionsExpiry(String realmIdentifier, Long groupId,
+                        UpdateGroupPermissionsExpiryRequest request) {
+                boolean groupExists = groupRepository.exists(Specification.allOf(
+                                GroupSpecification.hasId(groupId),
+                                GroupSpecification.hasRealm(realmIdentifier)));
+                if (!groupExists) {
+                        throw new EntityNotFoundException("Group not found");
+                }
+
+                List<GroupPermission> existingAssignments = groupPermissionRepository
+                                .findByGroupIdAndPermissionIdIn(groupId, request.getPermissionIds());
+
+                if (existingAssignments.isEmpty()) {
+                        throw new EntityNotFoundException("No existing permissions found to update");
+                }
+
+                existingAssignments.forEach(assignment -> {
+                        if (request.getExpiryDate() != null || request.getAllowInheritance() == null
+                                        && request.getMaxInheritanceDepth() == null) {
+                                assignment.setExpiryDate(request.getExpiryDate());
+                        }
+                        if (request.getAllowInheritance() != null) {
+                                assignment.setAllowInheritance(request.getAllowInheritance());
+                                // Always update depth together with allowInheritance (null clears it)
+                                assignment.setMaxInheritanceDepth(request.getMaxInheritanceDepth());
+                        } else if (request.getMaxInheritanceDepth() != null) {
+                                assignment.setMaxInheritanceDepth(request.getMaxInheritanceDepth());
+                        }
+                });
+                groupPermissionRepository.saveAll(existingAssignments);
         }
 
         @Transactional(readOnly = true)
