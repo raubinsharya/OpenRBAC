@@ -25,6 +25,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -44,6 +46,7 @@ public class GroupPermissionService {
 
         @Transactional
         @RequireAnyRole(value = { "realm-admin", "group-admin" })
+        @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
         public void addPermissionsToGroup(String realmIdentifier, Long groupId, AddGroupPermissionsRequest request) {
                 Group group = groupRepository.findOne(Specification.allOf(
                                 GroupSpecification.hasId(groupId),
@@ -99,6 +102,7 @@ public class GroupPermissionService {
 
         @Transactional
         @RequireAnyRole(value = { "realm-admin", "group-admin" })
+        @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
         public void removePermissionsFromGroup(String realmIdentifier, Long groupId,
                         RemoveGroupPermissionsRequest request) {
                 boolean groupExists = groupRepository.exists(Specification.allOf(
@@ -117,6 +121,7 @@ public class GroupPermissionService {
         }
 
         @Transactional
+        @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
         public void updateGroupPermissionsExpiry(String realmIdentifier, Long groupId,
                         UpdateGroupPermissionsExpiryRequest request) {
                 boolean groupExists = groupRepository.exists(Specification.allOf(
@@ -179,6 +184,7 @@ public class GroupPermissionService {
         }
 
         @Transactional(readOnly = true)
+        @Cacheable(value = "permission_checks", key = "#realmIdentifier + '-g' + #groupId + '-' + #permissionId + '-' + #permissionName")
         public boolean hasPermission(String realmIdentifier, Long groupId, Long permissionId, String permissionName,
                         String resource,
                         String action) {

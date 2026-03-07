@@ -9,9 +9,9 @@ import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.RealmSpecification;
 
-import lombok.RequiredArgsConstructor;
-
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import lombok.RequiredArgsConstructor;
 
 import java.util.Optional;
 
@@ -29,22 +29,29 @@ public class RealmService {
                 .allOf(RealmSpecification.hasStatus(status))
                 .and(RealmSpecification.searchByNameIgnoreCase(realmFilterRequest.getName()))
                 .and(BaseSpecification.withBaseFilters(realmFilterRequest));
-        return PagedResponse.fromPage(this.realmRepository.findAll(spec, realmFilterRequest.toPageable()), RealmDTO::from);
+        return PagedResponse.fromPage(this.realmRepository.findAll(spec, realmFilterRequest.toPageable()),
+                RealmDTO::from);
     }
 
-    public Optional<RealmDTO> getRealmById(Long id, boolean includeUsers, boolean includeRoles, boolean includePermissions) {
+    @Cacheable(value = "realms", key = "#id + '-' + #includeUsers + '-' + #includeRoles + '-' + #includePermissions")
+    public Optional<RealmDTO> getRealmById(Long id, boolean includeUsers, boolean includeRoles,
+            boolean includePermissions) {
         Specification<Realm> spec = Specification.allOf(RealmSpecification.hasId(id))
                 .and(RealmSpecification.includeUsers(includeUsers))
                 .and(RealmSpecification.includeRoles(includeRoles))
                 .and(RealmSpecification.includePermissions(includePermissions));
-        return realmRepository.findAll(spec).stream().findFirst().map(r -> RealmDTO.from(r, includeUsers, includeRoles, includePermissions));
+        return realmRepository.findAll(spec).stream().findFirst()
+                .map(r -> RealmDTO.from(r, includeUsers, includeRoles, includePermissions));
     }
 
-    public Optional<RealmDTO> getRealmByRealmId(String realmId, boolean includeUsers, boolean includeRoles, boolean includePermissions) {
+    @Cacheable(value = "realms", key = "#realmId + '-' + #includeUsers + '-' + #includeRoles + '-' + #includePermissions")
+    public Optional<RealmDTO> getRealmByRealmId(String realmId, boolean includeUsers, boolean includeRoles,
+            boolean includePermissions) {
         Specification<Realm> spec = Specification.allOf(RealmSpecification.hasRealmId(realmId))
                 .and(RealmSpecification.includeUsers(includeUsers))
                 .and(RealmSpecification.includeRoles(includeRoles))
                 .and(RealmSpecification.includePermissions(includePermissions));
-        return realmRepository.findAll(spec).stream().findFirst().map(r -> RealmDTO.from(r, includeUsers, includeRoles, includePermissions));
+        return realmRepository.findAll(spec).stream().findFirst()
+                .map(r -> RealmDTO.from(r, includeUsers, includeRoles, includePermissions));
     }
 }

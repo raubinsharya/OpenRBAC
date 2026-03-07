@@ -14,6 +14,8 @@ import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.RoleSpecification;
 import com.open.rbac.openrbac.utils.SecurityUtils;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 import lombok.RequiredArgsConstructor;
 
@@ -49,6 +51,7 @@ public class RoleService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "roles", key = "#realmIdentifier + '-' + #id")
     public RoleDTO getRoleById(Long id, String realmIdentifier) {
         Specification<Role> specification = Specification.allOf(RoleSpecification.hasRealm(realmIdentifier))
                 .and(RoleSpecification.hasId(id))
@@ -82,6 +85,7 @@ public class RoleService {
             TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
     @RequireAnyRole(value = { "realm-admin" })
     @Transactional
+    @CacheEvict(value = "roles", key = "#realmIdentifier + '-' + #id")
     public RoleDTO updateRole(String realmIdentifier, Long id, UpdateRoleRequest updateData) {
         Role existing = getRoleOrThrow(realmIdentifier, id);
 
@@ -104,6 +108,7 @@ public class RoleService {
             TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
     @RequireAnyRole(value = { "realm-admin" })
     @Transactional
+    @CacheEvict(value = "roles", key = "#realmIdentifier + '-' + #id")
     public RoleDTO patchRole(String realmIdentifier, Long id, UpdateRoleRequest patchData) {
         Role existing = getRoleOrThrow(realmIdentifier, id);
 

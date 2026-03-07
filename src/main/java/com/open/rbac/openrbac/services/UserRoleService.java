@@ -23,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +41,9 @@ public class UserRoleService {
 
     @Transactional
     // @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    // @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
+            "effective_permissions" }, allEntries = true)
     public void addRolesToUser(String realmIdentifier, Long userId, AddUserRolesRequest request) {
         User user = userRepository.findOne(
                 Specification.allOf(
@@ -89,7 +94,9 @@ public class UserRoleService {
     }
 
     @Transactional
-    // @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    @RequireAnyRole(value = { "realm-admin", "group-admin" })
+    @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
+            "effective_permissions" }, allEntries = true)
     public void removeRolesFromUser(String realmId, Long userId, RemoveUserRolesRequest request) {
         // Verify user exists in realm
         boolean userExists = userRepository.exists(
@@ -106,6 +113,8 @@ public class UserRoleService {
     }
 
     @Transactional
+    @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
+            "effective_permissions" }, allEntries = true)
     public void updateUserRolesExpiry(String realmId, Long userId, UpdateUserRolesExpiryRequest request) {
         boolean userExists = userRepository.exists(
                 Specification.allOf(UserSpecification.hasUserId(userId, realmId)));
@@ -152,6 +161,7 @@ public class UserRoleService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "role_checks", key = "#realmIdentifier + '-' + #userId + '-' + #roleId + '-' + #roleName")
     public boolean hasRole(String realmIdentifier, Long userId, Long roleId, String roleName) {
         if (roleId == null && (roleName == null || roleName.isEmpty())) {
             throw new IllegalArgumentException("Either roleId or roleName must be provided");

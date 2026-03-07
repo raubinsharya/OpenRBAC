@@ -14,6 +14,8 @@ import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.GroupSpecification;
 import com.open.rbac.openrbac.specifications.RealmSpecification;
 import jakarta.persistence.EntityNotFoundException;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 import com.open.rbac.openrbac.models.User;
 import com.open.rbac.openrbac.repositories.UserRepository;
@@ -56,6 +58,7 @@ public class GroupService {
 
     @RequireAllRoles(value = { "realm-admin" })
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = { "groups", "group_hierarchies" }, allEntries = true)
     public Group createGroup(String realmIdentifier, CreateGroupRequest createGroupRequest) {
         Specification<Realm> specification = RealmSpecification.hasIdOrName(realmIdentifier);
         var realm = realmRepository.findOne(specification)
@@ -98,12 +101,14 @@ public class GroupService {
         return groupRepository.save(group);
     }
 
+    @Cacheable(value = "groups", key = "#realmIdentifier + '-' + #id")
     public GroupDTO getGroupById(String realmIdentifier, Long id) {
         return GroupDTO.from(getGroupOrThrow(realmIdentifier, id));
     }
 
     @RequireAllRoles(value = { "realm-admin" })
     @Transactional
+    @CacheEvict(value = { "groups", "group_hierarchies" }, allEntries = true)
     public GroupDTO updateGroup(String realmIdentifier, Long id, UpdateGroupRequest updateData) {
         Group existing = getGroupOrThrow(realmIdentifier, id);
 
@@ -119,6 +124,7 @@ public class GroupService {
 
     @RequireAllRoles(value = { "realm-admin" })
     @Transactional
+    @CacheEvict(value = { "groups", "group_hierarchies" }, allEntries = true)
     public GroupDTO patchGroup(String realmIdentifier, Long id, UpdateGroupRequest patchData) {
         Group existing = getGroupOrThrow(realmIdentifier, id);
 
@@ -137,6 +143,7 @@ public class GroupService {
                 .orElseThrow(() -> new EntityNotFoundException("Group not found with id: " + id));
     }
 
+    @Cacheable(value = "group_hierarchies", key = "#realmIdentifier + '-' + #groupId")
     public GroupDTO getHierarchy(String realmIdentifier, Long groupId) {
         // Fetch specific group, its ancestors, and all its descendants in one query
         List<Group> hierarchy = groupRepository.findGroupHierarchy(realmIdentifier, groupId);
