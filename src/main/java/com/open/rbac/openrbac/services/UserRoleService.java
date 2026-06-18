@@ -41,7 +41,7 @@ public class UserRoleService {
 
     @Transactional
     // @RequireAnyRole(value = {"realm-admin", "group-admin"})
-    // @RequireAnyRole(value = {"realm-admin", "group-admin"})
+    @RequireAnyRole(value = { "realm-admin", "group-admin" })
     @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
             "effective_permissions" }, allEntries = true)
     public void addRolesToUser(String realmIdentifier, Long userId, AddUserRolesRequest request) {

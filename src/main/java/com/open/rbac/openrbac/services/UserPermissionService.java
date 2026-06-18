@@ -174,7 +174,6 @@ public class UserPermissionService {
         }
 
         @Transactional(readOnly = true)
-        @Cacheable(value = "permission_checks", key = "#realmId + '-' + #userId + '-' + #request.hashCode()")
         public boolean checkPermission(String realmId, Long userId,
                         CheckPermissionRequest request) {
                 Specification<User> userSpecification = Specification.allOf(
