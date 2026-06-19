@@ -5,6 +5,8 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.lang.Nullable;
 
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 public class SecurityUtils {
@@ -26,5 +28,38 @@ public class SecurityUtils {
             return jwtMapper.apply(jwt);
         }
         return null;
+    }
+
+    /**
+     * Extracts the Keycloak realm name from the JWT issuer claim.
+     * Expected issuer format: http://<host>/realms/{realmName}
+     *
+     * @param jwt the authenticated JWT
+     * @return the realm name, or null if the issuer is missing/malformed
+     */
+    @Nullable
+    public static String extractRealmFromJwt(Jwt jwt) {
+        String issuer = jwt.getIssuer() != null ? jwt.getIssuer().toString() : null;
+        if (issuer == null) return null;
+        String[] parts = issuer.split("/realms/");
+        if (parts.length < 2 || parts[1].isBlank()) return null;
+        return parts[1];
+    }
+
+    /**
+     * Returns true if the JWT contains "realm_admin" inside the
+     * {@code realm_access.roles} claim.
+     *
+     * @param jwt the authenticated JWT
+     * @return true when the user carries the realm_admin role
+     */
+    public static boolean isRealmAdmin(Jwt jwt) {
+        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
+        if (realmAccess == null) return false;
+        Object roles = realmAccess.get("roles");
+        if (roles instanceof List<?> roleList) {
+            return roleList.contains("realm_admin");
+        }
+        return false;
     }
 }
