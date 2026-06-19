@@ -1,14 +1,52 @@
 package com.open.rbac.openrbac.specifications;
 
+import com.open.rbac.openrbac.models.User;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
 import com.open.rbac.openrbac.models.Realm;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 public class RealmSpecification {
+
+    /**
+     * Filters realms to only those where a User exists with the given username OR email.
+     * Uses a correlated EXISTS subquery — no joins, no duplicates.
+     */
+    public static Specification<Realm> hasUserWithUsernameOrEmail(String username, String email) {
+        return (root, query, cb) -> {
+            if ((username == null || username.isBlank()) && (email == null || email.isBlank())) {
+                return cb.disjunction(); // no credentials → return nothing
+            }
+            if (query == null) return null; // guard against null query in count queries
+
+            // EXISTS (SELECT 1 FROM User u WHERE u.realm = <current realm> AND (u.username = ? OR u.email = ?))
+            Subquery<Integer> subquery = query.subquery(Integer.class);
+            Root<User> userRoot = subquery.from(User.class);
+            subquery.select(cb.literal(1));
+
+            List<Predicate> userPredicates = new ArrayList<>();
+            if (username != null && !username.isBlank()) {
+                userPredicates.add(cb.equal(userRoot.get("username"), username));
+            }
+            if (email != null && !email.isBlank()) {
+                userPredicates.add(cb.equal(userRoot.get("email"), email));
+            }
+
+            subquery.where(
+                cb.equal(userRoot.get("realm"), root),                      // correlated to current realm
+                cb.or(userPredicates.toArray(new Predicate[0]))             // username OR email match
+            );
+
+            return cb.exists(subquery);
+        };
+    }
 
     public static Specification<Realm> hasStatus(String status) {
         return (root, query, cb) -> {

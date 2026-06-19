@@ -54,11 +54,30 @@ public class SecurityUtils {
      * @return true when the user carries the realm_admin role
      */
     public static boolean isRealmAdmin(Jwt jwt) {
+        return hasRealmRole(jwt, "realm_admin");
+    }
+
+    /**
+     * Returns true if the JWT contains "platform_admin" inside the
+     * {@code realm_access.roles} claim.
+     * Platform admins have unrestricted access across all realms.
+     *
+     * @param jwt the authenticated JWT
+     * @return true when the user carries the platform_admin role
+     */
+    public static boolean isPlatformAdmin(Jwt jwt) {
+        return hasRealmRole(jwt, "platform_admin");
+    }
+
+    /**
+     * Checks if the JWT {@code realm_access.roles} list contains the given role name.
+     */
+    private static boolean hasRealmRole(Jwt jwt, String roleName) {
         Map<String, Object> realmAccess = jwt.getClaim("realm_access");
         if (realmAccess == null) return false;
         Object roles = realmAccess.get("roles");
         if (roles instanceof List<?> roleList) {
-            return roleList.contains("realm_admin");
+            return roleList.contains(roleName);
         }
         return false;
     }
