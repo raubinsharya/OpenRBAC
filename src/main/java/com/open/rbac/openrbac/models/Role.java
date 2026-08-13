@@ -42,6 +42,9 @@ public class Role {
         @Size(min = 2, max = 100, message = "Role name must be between 2 and 100 characters")
         private String name;
 
+        @Column(name = "keycloak_role_id", unique = true, length = 100)
+        private String keycloakRoleId;
+
         @Column(columnDefinition = "TEXT")
         private String description;
 

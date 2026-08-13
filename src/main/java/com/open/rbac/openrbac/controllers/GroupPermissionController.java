@@ -1,7 +1,5 @@
 package com.open.rbac.openrbac.controllers;
 
-import com.open.rbac.openrbac.dtos.GroupPermissionDTO;
-import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.requestParams.GroupPermissionFilterRequest;
 import com.open.rbac.openrbac.requests.AddGroupPermissionsRequest;
 import com.open.rbac.openrbac.requests.RemoveGroupPermissionsRequest;
@@ -9,7 +7,6 @@ import com.open.rbac.openrbac.requests.UpdateGroupPermissionsExpiryRequest;
 import com.open.rbac.openrbac.services.GroupPermissionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
