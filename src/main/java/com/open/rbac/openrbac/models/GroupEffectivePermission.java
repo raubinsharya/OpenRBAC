@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.models;
 
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import org.hibernate.annotations.Immutable;
 import org.hibernate.annotations.Subselect;
 import lombok.Data;
@@ -11,6 +12,7 @@ import lombok.Builder;
 import java.time.LocalDateTime;
 
 @Entity
+@Audited
 @Immutable
 @Subselect("""
         SELECT

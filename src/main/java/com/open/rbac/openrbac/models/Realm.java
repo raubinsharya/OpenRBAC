@@ -1,9 +1,12 @@
 package com.open.rbac.openrbac.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import com.fasterxml.jackson.annotation.*;
 import com.open.rbac.openrbac.enums.EntityStatus;
 
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -12,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.Set;
 
 @Entity
+@Audited
 @Table(name = "realms", indexes = {
         @Index(name = "idx_realm_name", columnList = "name"),
         @Index(name = "idx_realm_id", columnList = "realm_id"),
@@ -25,6 +29,7 @@ import java.util.Set;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Realm {
 

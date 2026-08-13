@@ -2,6 +2,7 @@ package com.open.rbac.openrbac.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
  * Supports temporary group memberships for guest users and contractors
  */
 @Entity
+@Audited
 @Table(name = "user_groups", indexes = {
         @Index(name = "idx_user_group_user", columnList = "user_id"),
         @Index(name = "idx_user_group_group", columnList = "group_id"),

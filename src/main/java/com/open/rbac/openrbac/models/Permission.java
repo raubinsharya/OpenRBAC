@@ -2,6 +2,7 @@ package com.open.rbac.openrbac.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -18,6 +19,7 @@ import com.open.rbac.openrbac.enums.EntityStatus;
  * USER_EDIT)
  */
 @Entity
+@Audited
 @Table(name = "permissions", indexes = {
         @Index(name = "idx_permission_realm_name", columnList = "realm_id, name"),
         @Index(name = "idx_permission_resource", columnList = "resource"),

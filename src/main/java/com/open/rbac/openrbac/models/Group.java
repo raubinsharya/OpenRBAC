@@ -1,7 +1,12 @@
 package com.open.rbac.openrbac.models;
 
+import lombok.EqualsAndHashCode;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -21,6 +26,7 @@ import com.open.rbac.openrbac.enums.EntityStatus;
  * Enables efficient hierarchical queries and inheritance calculations
  */
 @Entity
+@Audited
 @Table(name = "groups", indexes = {
         @Index(name = "idx_group_realm_name", columnList = "realm_id, name"),
         @Index(name = "idx_group_path", columnList = "path"),
@@ -35,10 +41,13 @@ import com.open.rbac.openrbac.enums.EntityStatus;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Group {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @EqualsAndHashCode.Include
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)

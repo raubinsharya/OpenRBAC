@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.models;
 
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.ToString;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
  * Defines which permissions are contained within each role
  */
 @Entity
+@Audited
 @Table(name = "role_permissions", indexes = {
                 @Index(name = "idx_role_permission_role", columnList = "role_id"),
                 @Index(name = "idx_role_permission_permission", columnList = "permission_id"),

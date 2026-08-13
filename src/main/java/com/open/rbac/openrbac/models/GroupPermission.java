@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.models;
 
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
  * Enables direct permission assignment to groups (bypassing roles)
  */
 @Entity
+@Audited
 @Table(name = "group_permissions", indexes = {
                 @Index(name = "idx_group_permission_group", columnList = "group_id"),
                 @Index(name = "idx_group_permission_permission", columnList = "permission_id"),
