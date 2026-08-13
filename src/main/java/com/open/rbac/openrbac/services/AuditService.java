@@ -33,7 +33,11 @@ public class AuditService {
             "realms", Realm.class,
             "groups", Group.class,
             "user-roles", UserRole.class,
-            "group-roles", GroupRole.class
+            "group-roles", GroupRole.class,
+            "permissions", Permission.class,
+            "role-permissions", RolePermission.class,
+            "group-permissions", GroupPermission.class,
+            "user-permissions", UserPermission.class
     );
 
     @Transactional(readOnly = true)
