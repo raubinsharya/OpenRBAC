@@ -10,4 +10,5 @@ import java.util.Optional;
 @Repository
 public interface RealmRepository extends JpaRepository<Realm, Long>, JpaSpecificationExecutor<Realm> {
     Optional<Realm> findByRealmId(String realmId);
+    Optional<Realm> findByName(String name);
 }

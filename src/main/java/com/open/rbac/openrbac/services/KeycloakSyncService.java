@@ -43,6 +43,8 @@ public class KeycloakSyncService {
             handleRealmRoleMappingEvent(event);
         } else if ("REALM_ROLE".equals(event.getResourceType())) {
             handleRealmRoleEvent(event);
+        } else if ("REALM".equals(event.getResourceType())) {
+            handleRealmEvent(event);
         } else {
             log.debug("Resource type {} is currently not synchronized", event.getResourceType());
         }
@@ -320,6 +322,75 @@ public class KeycloakSyncService {
 
         } catch (Exception e) {
             log.error("Failed to handle realm role event", e);
+        }
+    }
+
+    private void handleRealmEvent(KafkaAdminEventDto event) {
+        try {
+            String operation = event.getOperationType();
+            String realmNameOrId = event.getResourcePath();
+
+            if (realmNameOrId == null) {
+                log.warn("Could not extract realm identifier from resource path for REALM: {}", event.getResourcePath());
+                return;
+            }
+
+            if ("CREATE".equals(operation) || "UPDATE".equals(operation)) {
+                if (event.getRepresentation() == null) {
+                    log.warn("Representation is missing for {} realm operation. Path: {}", operation, event.getResourcePath());
+                    return;
+                }
+                
+                java.util.Map<String, Object> representation = objectMapper.readValue(event.getRepresentation(), new TypeReference<java.util.Map<String, Object>>() {});
+                String realmName = (String) representation.get("realm");
+                String realmId = (String) representation.get("id");
+
+                if (realmName == null) realmName = realmNameOrId;
+                if (realmId == null) realmId = realmNameOrId;
+
+                Realm realm = realmRepository.findByRealmId(realmId)
+                        .orElseGet(() -> realmRepository.findByName(realmNameOrId).orElse(new Realm()));
+                
+                realm.setName(realmName);
+                realm.setRealmId(realmId);
+                if (realm.getId() == null) {
+                    realm.setStatus(EntityStatus.ACTIVE);
+                }
+                
+                realmRepository.save(realm);
+                log.info("Successfully synced realm {} ({})", realmName, realmId);
+
+            } else if ("DELETE".equals(operation)) {
+                Realm realm = realmRepository.findByRealmId(realmNameOrId)
+                        .orElseGet(() -> realmRepository.findByName(realmNameOrId).orElse(null));
+                        
+                if (realm != null) {
+                    // Soft-delete to avoid complex JPA cascading foreign key violations
+                    realm.setStatus(EntityStatus.DISABLED);
+                    
+                    String suffix = "_del_" + System.currentTimeMillis();
+                    
+                    String newName = realm.getName();
+                    if (newName.length() + suffix.length() > 100) {
+                        newName = newName.substring(0, 100 - suffix.length());
+                    }
+                    realm.setName(newName + suffix);
+                    
+                    String newRealmId = realm.getRealmId();
+                    if (newRealmId.length() + suffix.length() > 100) {
+                        newRealmId = newRealmId.substring(0, 100 - suffix.length());
+                    }
+                    realm.setRealmId(newRealmId + suffix);
+                    
+                    realmRepository.save(realm);
+                    log.info("Successfully soft-deleted realm {} and renamed to avoid unique constraint violations", realmNameOrId);
+                } else {
+                    log.warn("Realm {} not found for deletion", realmNameOrId);
+                }
+            }
+
+        } catch (Exception e) {
+            log.error("Failed to handle realm event", e);
         }
     }
 }
