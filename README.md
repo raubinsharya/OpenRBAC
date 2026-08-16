@@ -43,9 +43,7 @@ OpenRBAC is a high-performance, developer-friendly **Role-Based Access Control (
 - **Audit Logging:** Detailed event streaming and compliance reporting for every security change.
 - **Logical Deletion (Soft Deletes):** Keep historical relationship mapping intact while safely removing entities.
 - **ABAC Support:** Introduction of Attribute-Based Access Control for more dynamic policies.
-- **API Keys:** Management of programmatic access keys and client credentials.
 - **Client SDKs:** Official packages in popular languages (Node.js, Python, Go, Java) to seamlessly integrate OpenRBAC into any application stack.
-- **Redis Cache:** Centralized caching for near-zero latency authorization checks.
 - **Webhooks:** Real-time notifications for security events (e.g., membership expiry).
 
 ---
@@ -69,7 +67,7 @@ OpenRBAC is a high-performance, developer-friendly **Role-Based Access Control (
 OpenRBAC seamlessly synchronizes roles with Keycloak via Kafka. To protect essential administrative roles from being modified or their status toggled through the UI or API:
 
 1. **System Roles Flag (`isSystemRole`)**: Add the custom attribute `isSystemRole` with the value `true` to your role in Keycloak. OpenRBAC will dynamically parse this attribute during sync (`CREATE` or `UPDATE` events) and lock down the role in the database.
-2. **Platform Admin**: The `platform-admin` role is a special system role. Any user assigned the `platform-admin` role will have unrestricted access across **all realms**. By default, `platform-admin` and `realm-admin` are hardcoded as system roles, but it is recommended to explicitly set the `isSystemRole` attribute in Keycloak.
+2. **Platform Admin**: The `platform-admin` role is a special system role. Any user assigned the `platform-admin` role will have unrestricted access across **all realms**. It is recommended to explicitly set the `isSystemRole` attribute in Keycloak.
 
 ---
 
