@@ -2,6 +2,7 @@ package com.open.rbac.openrbac.services;
 
 import com.open.rbac.openrbac.requestParams.GroupFilterRequest;
 import com.open.rbac.openrbac.annotations.RequireAllRoles;
+import com.open.rbac.openrbac.annotations.RequireAnyRole;
 import com.open.rbac.openrbac.dtos.GroupDTO;
 import com.open.rbac.openrbac.dtos.PagedResponse;
 import com.open.rbac.openrbac.models.Group;
@@ -56,7 +57,7 @@ public class GroupService {
         return PagedResponse.fromPage(groups, GroupDTO::from);
     }
 
-    @RequireAllRoles(value = { "realm-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin" })
     @Transactional(rollbackFor = Exception.class)
     @CacheEvict(value = { "groups", "group_hierarchies" }, allEntries = true)
     public Group createGroup(String realmIdentifier, CreateGroupRequest createGroupRequest) {
@@ -106,7 +107,7 @@ public class GroupService {
         return GroupDTO.from(getGroupOrThrow(realmIdentifier, id));
     }
 
-    @RequireAllRoles(value = { "realm-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin" })
     @Transactional
     @CacheEvict(value = { "groups", "group_hierarchies" }, allEntries = true)
     public GroupDTO updateGroup(String realmIdentifier, Long id, UpdateGroupRequest updateData) {
@@ -122,7 +123,7 @@ public class GroupService {
         return GroupDTO.from(saved);
     }
 
-    @RequireAllRoles(value = { "realm-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin" })
     @Transactional
     @CacheEvict(value = { "groups", "group_hierarchies" }, allEntries = true)
     public GroupDTO patchGroup(String realmIdentifier, Long id, UpdateGroupRequest patchData) {

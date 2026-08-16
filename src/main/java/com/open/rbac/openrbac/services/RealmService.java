@@ -62,8 +62,8 @@ public class RealmService {
     /**
      * Applies realm-level access control to the given specification based on the caller's JWT role.
      * <ul>
-     *   <li><b>platform_admin</b>: unrestricted — all realms visible</li>
-     *   <li><b>realm_admin</b>: scoped to realms where the user has a record (by username/email)</li>
+     *   <li><b>platform-admin</b>: unrestricted — all realms visible</li>
+     *   <li><b>realm-admin</b>: scoped to realms where the user has a record (by username/email)</li>
      *   <li>Regular user: scoped to the single realm from the JWT issuer claim</li>
      * </ul>
      */

@@ -47,26 +47,26 @@ public class SecurityUtils {
     }
 
     /**
-     * Returns true if the JWT contains "realm_admin" inside the
+     * Returns true if the JWT contains "realm-admin" inside the
      * {@code realm_access.roles} claim.
      *
      * @param jwt the authenticated JWT
-     * @return true when the user carries the realm_admin role
+     * @return true when the user carries the realm-admin role
      */
     public static boolean isRealmAdmin(Jwt jwt) {
-        return hasRealmRole(jwt, "realm_admin");
+        return hasRealmRole(jwt, "realm-admin");
     }
 
     /**
-     * Returns true if the JWT contains "platform_admin" inside the
+     * Returns true if the JWT contains "platform-admin" inside the
      * {@code realm_access.roles} claim.
      * Platform admins have unrestricted access across all realms.
      *
      * @param jwt the authenticated JWT
-     * @return true when the user carries the platform_admin role
+     * @return true when the user carries the platform-admin role
      */
     public static boolean isPlatformAdmin(Jwt jwt) {
-        return hasRealmRole(jwt, "platform_admin");
+        return hasRealmRole(jwt, "platform-admin");
     }
 
     /**

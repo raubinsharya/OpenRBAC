@@ -43,7 +43,7 @@ public class RolePermissionService {
     private final UserRepository userRepository;
 
     @Transactional
-    @RequireAnyRole(value = { "realm-admin", "group-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin", "group-admin" })
     @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
     public void addPermissionsToRole(String realmIdentifier, Long roleId, AddRolePermissionsRequest request) {
         Long realmId = resolveRealmId(realmIdentifier);
@@ -94,7 +94,7 @@ public class RolePermissionService {
     }
 
     @Transactional
-    @RequireAnyRole(value = { "realm-admin", "group-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin", "group-admin" })
     @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
     public void removePermissionsFromRole(String realmIdentifier, Long roleId, RemoveRolePermissionsRequest request) {
         Long realmId = resolveRealmId(realmIdentifier);
@@ -111,7 +111,7 @@ public class RolePermissionService {
     }
 
     @Transactional
-    @RequireAnyRole(value = { "realm-admin", "group-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin", "group-admin" })
     @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
     public void updatePermissionsExpiry(String realmIdentifier, Long roleId,
             UpdateRolePermissionsExpiryRequest request) {

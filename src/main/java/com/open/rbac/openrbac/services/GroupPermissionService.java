@@ -45,7 +45,7 @@ public class GroupPermissionService {
         private final UserRepository userRepository;
 
         @Transactional
-        @RequireAnyRole(value = { "realm-admin", "group-admin" })
+        @RequireAnyRole(value = { "realm-admin", "platform-admin", "group-admin" })
         @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
         public void addPermissionsToGroup(String realmIdentifier, Long groupId, AddGroupPermissionsRequest request) {
                 Group group = groupRepository.findOne(Specification.allOf(
@@ -101,7 +101,7 @@ public class GroupPermissionService {
         }
 
         @Transactional
-        @RequireAnyRole(value = { "realm-admin", "group-admin" })
+        @RequireAnyRole(value = { "realm-admin", "platform-admin", "group-admin" })
         @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
         public void removePermissionsFromGroup(String realmIdentifier, Long groupId,
                         RemoveGroupPermissionsRequest request) {

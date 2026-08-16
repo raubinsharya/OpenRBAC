@@ -79,7 +79,7 @@ public class PermissionService {
 
         @Retryable(retryFor = { ConnectException.class,
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-        @RequireAnyRole(value = { "realm-admin" })
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
         @Transactional
         public Permission createPermission(String realmIdentifier, Permission permission) {
                 Specification<Realm> spec = com.open.rbac.openrbac.specifications.RealmSpecification
@@ -103,7 +103,7 @@ public class PermissionService {
 
         @Retryable(retryFor = { ConnectException.class,
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-        @RequireAnyRole(value = { "realm-admin" })
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
         @Transactional
         public ArrayList<PermissionDTO> createStandardPermission(
                         String realmIdentifier,
@@ -193,7 +193,7 @@ public class PermissionService {
 
         @Retryable(retryFor = { ConnectException.class,
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-        @RequireAnyRole(value = { "realm-admin" })
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
         @Transactional
         @CacheEvict(value = "permissions", key = "#realmIdentifier + '-' + #id")
         public PermissionDTO updatePermission(String realmIdentifier, Long id, UpdatePermissionRequest updateData) {
@@ -213,7 +213,7 @@ public class PermissionService {
 
         @Retryable(retryFor = { ConnectException.class,
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-        @RequireAnyRole(value = { "realm-admin" })
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
         @Transactional
         @CacheEvict(value = "permissions", key = "#realmIdentifier + '-' + #id")
         public PermissionDTO patchPermission(String realmIdentifier, Long id, UpdatePermissionRequest patchData) {

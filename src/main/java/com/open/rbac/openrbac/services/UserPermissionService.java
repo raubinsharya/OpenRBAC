@@ -27,7 +27,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 
 import java.util.List;
 import java.util.Objects;
@@ -43,7 +42,7 @@ public class UserPermissionService {
         private final UserEffectivePermissionRepository userEffectivePermissionRepository;
 
         @Transactional
-        // @RequireAnyRole(value = {"realm-admin"})
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
         @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
         public void addPermissionsToUser(String realmIdentifier, Long userId, AddUserPermissionsRequest request) {
                 User user = userRepository.findOne(Specification.allOf(
@@ -94,7 +93,7 @@ public class UserPermissionService {
         }
 
         @Transactional
-        // @RequireAnyRole(value = {"realm-admin"})
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
         @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
         public void removePermissionsFromUser(String realmIdentifier, Long userId,
                         RemoveUserPermissionsRequest request) {

@@ -43,7 +43,7 @@ public class GroupRoleService {
     private final UserRepository userRepository;
 
     @Transactional
-    @RequireAnyRole(value = { "realm-admin", "group-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin", "group-admin" })
     @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
             "effective_permissions" }, allEntries = true)
     public void addRolesToGroup(String realmIdentifier, Long groupId, AddGroupRolesRequest request) {
@@ -98,7 +98,7 @@ public class GroupRoleService {
     }
 
     @Transactional
-    @RequireAnyRole(value = { "realm-admin", "group-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin", "group-admin" })
     @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
             "effective_permissions" }, allEntries = true)
     public void removeRolesFromGroup(String realmIdentifier, Long groupId, RemoveGroupRolesRequest request) {

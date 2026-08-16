@@ -35,7 +35,8 @@ public class KeycloakSyncService {
 
     @Transactional
     public void processAdminEvent(KafkaAdminEventDto event) {
-        log.info("Processing admin event: {} on {} for realm {}", event.getOperationType(), event.getResourceType(), event.getRealmId());
+        log.info("Processing admin event: {} on {} for realm {}", event.getOperationType(), event.getResourceType(),
+                event.getRealmId());
 
         if ("USER".equals(event.getResourceType())) {
             handleUserEvent(event);
@@ -52,10 +53,11 @@ public class KeycloakSyncService {
 
     @Transactional
     public void processClientEvent(KafkaEventDto event) {
-        log.info("Processing client event: {} for user {} in realm {}", event.getType(), event.getUserId(), event.getRealmId());
+        log.info("Processing client event: {} for user {} in realm {}", event.getType(), event.getUserId(),
+                event.getRealmId());
 
-        if ("REGISTER".equals(event.getType()) || "UPDATE_PROFILE".equals(event.getType()) || 
-            "UPDATE_EMAIL".equals(event.getType()) || "DELETE_ACCOUNT".equals(event.getType())) {
+        if ("REGISTER".equals(event.getType()) || "UPDATE_PROFILE".equals(event.getType()) ||
+                "UPDATE_EMAIL".equals(event.getType()) || "DELETE_ACCOUNT".equals(event.getType())) {
             handleClientUserEvent(event);
         } else {
             log.debug("Client event type {} is currently not synchronized", event.getType());
@@ -66,7 +68,7 @@ public class KeycloakSyncService {
         try {
             String operation = event.getOperationType();
             String resourcePath = event.getResourcePath(); // e.g. users/4e17b8f0-1234-5678-abcd-ef0123456789
-            
+
             // Extract Keycloak user ID from resource path
             String keycloakUserId = null;
             if (resourcePath != null && resourcePath.startsWith("users/")) {
@@ -87,8 +89,9 @@ public class KeycloakSyncService {
                     return;
                 }
 
-                UserRepresentationDto userDto = objectMapper.readValue(event.getRepresentation(), UserRepresentationDto.class);
-                
+                UserRepresentationDto userDto = objectMapper.readValue(event.getRepresentation(),
+                        UserRepresentationDto.class);
+
                 Realm realm = realmRepository.findByRealmId(event.getRealmId()).orElse(null);
                 if (realm == null) {
                     log.error("Realm not found: {}. Cannot sync user.", event.getRealmId());
@@ -106,7 +109,7 @@ public class KeycloakSyncService {
 
                 userRepository.save(user);
                 log.info("Successfully synced user {} ({})", user.getUsername(), keycloakUserId);
-                
+
             } else if ("DELETE".equals(operation)) {
                 final String finalKeycloakUserId = keycloakUserId;
                 userRepository.findByKeycloakUserId(finalKeycloakUserId).ifPresent(user -> {
@@ -151,7 +154,7 @@ public class KeycloakSyncService {
             User user = userRepository.findByKeycloakUserId(keycloakUserId).orElse(new User());
             user.setKeycloakUserId(keycloakUserId);
             user.setRealm(realm);
-            
+
             if (details.containsKey("username")) {
                 user.setUsername(details.get("username"));
             }
@@ -166,7 +169,7 @@ public class KeycloakSyncService {
             if (details.containsKey("last_name")) {
                 user.setLastName(details.get("last_name"));
             }
-            
+
             if (user.getId() == null) {
                 user.setStatus(EntityStatus.ACTIVE);
             }
@@ -183,8 +186,9 @@ public class KeycloakSyncService {
         try {
             String operation = event.getOperationType();
             String resourcePath = event.getResourcePath();
-            
-            // Extract Keycloak user ID from resource path e.g., users/{userId}/role-mappings/realm
+
+            // Extract Keycloak user ID from resource path e.g.,
+            // users/{userId}/role-mappings/realm
             String keycloakUserId = null;
             if (resourcePath != null && resourcePath.startsWith("users/")) {
                 String[] parts = resourcePath.split("/");
@@ -194,7 +198,8 @@ public class KeycloakSyncService {
             }
 
             if (keycloakUserId == null) {
-                log.warn("Could not extract keycloak user ID from resource path for REALM_ROLE_MAPPING: {}", resourcePath);
+                log.warn("Could not extract keycloak user ID from resource path for REALM_ROLE_MAPPING: {}",
+                        resourcePath);
                 return;
             }
 
@@ -203,8 +208,10 @@ public class KeycloakSyncService {
                 return;
             }
 
-            List<RoleRepresentationDto> roleDtos = objectMapper.readValue(event.getRepresentation(), new TypeReference<List<RoleRepresentationDto>>() {});
-            
+            List<RoleRepresentationDto> roleDtos = objectMapper.readValue(event.getRepresentation(),
+                    new TypeReference<List<RoleRepresentationDto>>() {
+                    });
+
             Realm realm = realmRepository.findByRealmId(event.getRealmId()).orElse(null);
             if (realm == null) {
                 log.error("Realm not found: {}. Cannot sync role mapping.", event.getRealmId());
@@ -231,7 +238,8 @@ public class KeycloakSyncService {
                             log.info("Mapped role {} to user {}", role.getName(), user.getUsername());
                         }
                     } else {
-                        log.warn("Role {} not found in local DB for realm {}, skipping mapping", roleDto.getName(), realm.getName());
+                        log.warn("Role {} not found in local DB for realm {}, skipping mapping", roleDto.getName(),
+                                realm.getName());
                     }
                 }
             } else if ("DELETE".equals(operation)) {
@@ -253,10 +261,10 @@ public class KeycloakSyncService {
         try {
             String operation = event.getOperationType();
             String resourcePath = event.getResourcePath();
-            
+
             String roleName = null;
             String roleIdFromPath = null;
-            
+
             if (resourcePath != null) {
                 if (resourcePath.startsWith("roles/")) {
                     String[] parts = resourcePath.split("/");
@@ -273,14 +281,16 @@ public class KeycloakSyncService {
 
             if ("CREATE".equals(operation) || "UPDATE".equals(operation)) {
                 if (event.getRepresentation() == null) {
-                    log.warn("Representation is missing for {} realm role operation. Path: {}", operation, resourcePath);
+                    log.warn("Representation is missing for {} realm role operation. Path: {}", operation,
+                            resourcePath);
                     return;
                 }
 
-                RoleRepresentationDto roleDto = objectMapper.readValue(event.getRepresentation(), RoleRepresentationDto.class);
+                RoleRepresentationDto roleDto = objectMapper.readValue(event.getRepresentation(),
+                        RoleRepresentationDto.class);
                 roleName = roleDto.getName();
                 String keycloakRoleId = roleDto.getId();
-                
+
                 Realm realm = realmRepository.findByRealmId(event.getRealmId()).orElse(null);
                 if (realm == null) {
                     log.error("Realm not found: {}. Cannot sync realm role.", event.getRealmId());
@@ -293,9 +303,15 @@ public class KeycloakSyncService {
                 role.setDescription(roleDto.getDescription());
                 role.setRealm(realm);
                 role.setStatus(EntityStatus.ACTIVE);
-                if (role.getId() == null) {
-                    role.setIsSystemRole(false);
+
+                boolean isSystem = false;
+                if (roleDto.getAttributes() != null && roleDto.getAttributes().containsKey("isSystemRole")) {
+                    java.util.List<String> sysRoleVals = roleDto.getAttributes().get("isSystemRole");
+                    if (sysRoleVals != null && sysRoleVals.contains("true")) {
+                        isSystem = true;
+                    }
                 }
+                role.setIsSystemRole(isSystem);
 
                 roleRepository.save(role);
                 log.info("Successfully synced realm role {} for realm {}", roleName, realm.getName());
@@ -316,7 +332,8 @@ public class KeycloakSyncService {
                         });
                     });
                 } else {
-                    log.warn("Could not extract role name or ID from resource path for REALM_ROLE DELETE: {}", resourcePath);
+                    log.warn("Could not extract role name or ID from resource path for REALM_ROLE DELETE: {}",
+                            resourcePath);
                 }
             }
 
@@ -328,62 +345,81 @@ public class KeycloakSyncService {
     private void handleRealmEvent(KafkaAdminEventDto event) {
         try {
             String operation = event.getOperationType();
-            String realmNameOrId = event.getResourcePath();
+            String initialRealmNameOrId = event.getResourcePath();
 
-            if (realmNameOrId == null) {
-                log.warn("Could not extract realm identifier from resource path for REALM: {}", event.getResourcePath());
+            if (initialRealmNameOrId == null) {
+                initialRealmNameOrId = event.getRealmId();
+            }
+
+            if (initialRealmNameOrId == null) {
+                log.warn("Could not extract realm identifier from resource path or realmId for REALM");
                 return;
             }
 
+            final String realmNameOrId = initialRealmNameOrId;
+
             if ("CREATE".equals(operation) || "UPDATE".equals(operation)) {
                 if (event.getRepresentation() == null) {
-                    log.warn("Representation is missing for {} realm operation. Path: {}", operation, event.getResourcePath());
+                    log.warn("Representation is missing for {} realm operation. Path: {}", operation,
+                            event.getResourcePath());
                     return;
                 }
-                
-                java.util.Map<String, Object> representation = objectMapper.readValue(event.getRepresentation(), new TypeReference<java.util.Map<String, Object>>() {});
+
+                java.util.Map<String, Object> representation = objectMapper.readValue(event.getRepresentation(),
+                        new TypeReference<java.util.Map<String, Object>>() {
+                        });
                 String realmName = (String) representation.get("realm");
-                String realmId = (String) representation.get("id");
 
-                if (realmName == null) realmName = realmNameOrId;
-                if (realmId == null) realmId = realmNameOrId;
+                // Keycloak event always has the correct UUID in event.getRealmId()
+                String eventRealmId = event.getRealmId();
 
-                Realm realm = realmRepository.findByRealmId(realmId)
-                        .orElseGet(() -> realmRepository.findByName(realmNameOrId).orElse(new Realm()));
-                
+                if (realmName == null)
+                    realmName = realmNameOrId;
+
+                final String finalRealmName = realmName;
+                Realm realm = realmRepository.findByRealmId(eventRealmId)
+                        .orElseGet(() -> realmRepository.findByName(finalRealmName)
+                                .orElseGet(() -> realmRepository.findByRealmId(finalRealmName) // fallback just in case
+                                        .orElse(new Realm())));
+
                 realm.setName(realmName);
-                realm.setRealmId(realmId);
-                if (realm.getId() == null) {
+                realm.setRealmId(eventRealmId); // Always store the UUID so other events can find it
+
+                Boolean enabled = (Boolean) representation.get("enabled");
+                if (enabled != null) {
+                    realm.setStatus(enabled ? EntityStatus.ACTIVE : EntityStatus.DISABLED);
+                } else if (realm.getId() == null) {
                     realm.setStatus(EntityStatus.ACTIVE);
                 }
-                
+
                 realmRepository.save(realm);
-                log.info("Successfully synced realm {} ({})", realmName, realmId);
+                log.info("Successfully synced realm {} ({})", realmName, eventRealmId);
 
             } else if ("DELETE".equals(operation)) {
                 Realm realm = realmRepository.findByRealmId(realmNameOrId)
                         .orElseGet(() -> realmRepository.findByName(realmNameOrId).orElse(null));
-                        
+
                 if (realm != null) {
                     // Soft-delete to avoid complex JPA cascading foreign key violations
                     realm.setStatus(EntityStatus.DISABLED);
-                    
+
                     String suffix = "_del_" + System.currentTimeMillis();
-                    
+
                     String newName = realm.getName();
                     if (newName.length() + suffix.length() > 100) {
                         newName = newName.substring(0, 100 - suffix.length());
                     }
                     realm.setName(newName + suffix);
-                    
+
                     String newRealmId = realm.getRealmId();
                     if (newRealmId.length() + suffix.length() > 100) {
                         newRealmId = newRealmId.substring(0, 100 - suffix.length());
                     }
                     realm.setRealmId(newRealmId + suffix);
-                    
+
                     realmRepository.save(realm);
-                    log.info("Successfully soft-deleted realm {} and renamed to avoid unique constraint violations", realmNameOrId);
+                    log.info("Successfully soft-deleted realm {} and renamed to avoid unique constraint violations",
+                            realmNameOrId);
                 } else {
                     log.warn("Realm {} not found for deletion", realmNameOrId);
                 }

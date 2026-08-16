@@ -61,7 +61,7 @@ public class RoleService {
 
     @Retryable(retryFor = { ConnectException.class,
             TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-    @RequireAnyRole(value = { "realm-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin" })
     public Role createRole(String realmIdentifier, Role role) {
         Specification<com.open.rbac.openrbac.models.Realm> spec = com.open.rbac.openrbac.specifications.RealmSpecification
                 .hasIdOrName(realmIdentifier);
@@ -83,7 +83,7 @@ public class RoleService {
 
     @Retryable(retryFor = { ConnectException.class,
             TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-    @RequireAnyRole(value = { "realm-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin" })
     @Transactional
     @CacheEvict(value = "roles", key = "#realmIdentifier + '-' + #id")
     public RoleDTO updateRole(String realmIdentifier, Long id, UpdateRoleRequest updateData) {
@@ -106,7 +106,7 @@ public class RoleService {
 
     @Retryable(retryFor = { ConnectException.class,
             TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-    @RequireAnyRole(value = { "realm-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin" })
     @Transactional
     @CacheEvict(value = "roles", key = "#realmIdentifier + '-' + #id")
     public RoleDTO patchRole(String realmIdentifier, Long id, UpdateRoleRequest patchData) {
