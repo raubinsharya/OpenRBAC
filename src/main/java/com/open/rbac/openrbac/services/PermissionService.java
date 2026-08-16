@@ -16,6 +16,8 @@ import com.open.rbac.openrbac.specifications.BaseSpecification;
 import com.open.rbac.openrbac.specifications.PermissionSpecification;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import com.open.rbac.openrbac.models.User;
 import com.open.rbac.openrbac.repositories.UserRepository;
 import com.open.rbac.openrbac.utils.ParsingUtils;
@@ -66,6 +68,7 @@ public class PermissionService {
         }
 
         @Transactional(readOnly = true)
+        @Cacheable(value = "permissions", key = "#realmIdentifier + '-' + #permissionId")
         public PermissionDTO getPermissionById(String realmIdentifier, Long permissionId) {
                 Specification<Permission> spec = Specification
                                 .allOf(PermissionSpecification.hasRealm(realmIdentifier))
@@ -76,7 +79,7 @@ public class PermissionService {
 
         @Retryable(retryFor = { ConnectException.class,
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-        @RequireAnyRole(value = { "realm-admin" })
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
         @Transactional
         public Permission createPermission(String realmIdentifier, Permission permission) {
                 Specification<Realm> spec = com.open.rbac.openrbac.specifications.RealmSpecification
@@ -100,7 +103,7 @@ public class PermissionService {
 
         @Retryable(retryFor = { ConnectException.class,
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-        @RequireAnyRole(value = { "realm-admin" })
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
         @Transactional
         public ArrayList<PermissionDTO> createStandardPermission(
                         String realmIdentifier,
@@ -190,8 +193,9 @@ public class PermissionService {
 
         @Retryable(retryFor = { ConnectException.class,
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-        @RequireAnyRole(value = { "realm-admin" })
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
         @Transactional
+        @CacheEvict(value = "permissions", key = "#realmIdentifier + '-' + #id")
         public PermissionDTO updatePermission(String realmIdentifier, Long id, UpdatePermissionRequest updateData) {
                 Permission existing = getPermissionOrThrow(realmIdentifier, id);
 
@@ -209,8 +213,9 @@ public class PermissionService {
 
         @Retryable(retryFor = { ConnectException.class,
                         TimeoutException.class }, maxAttemptsExpression = "${retry.tenant.max-attempts}", backoff = @Backoff(delayExpression = "${retry.tenant.delay}", multiplierExpression = "${retry.tenant.multiplier}"))
-        @RequireAnyRole(value = { "realm-admin" })
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
         @Transactional
+        @CacheEvict(value = "permissions", key = "#realmIdentifier + '-' + #id")
         public PermissionDTO patchPermission(String realmIdentifier, Long id, UpdatePermissionRequest patchData) {
                 Permission existing = getPermissionOrThrow(realmIdentifier, id);
 

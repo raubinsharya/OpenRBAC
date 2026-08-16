@@ -1,7 +1,10 @@
 package com.open.rbac.openrbac.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.*;
@@ -18,6 +21,7 @@ import com.open.rbac.openrbac.enums.EntityStatus;
  * Roles are containers for permissions and are scoped to realms
  */
 @Entity
+@Audited
 @Table(name = "roles", indexes = {
                 @Index(name = "idx_rbac_role_realm_name", columnList = "realm_id, name"),
                 @Index(name = "idx_rbac_role_status", columnList = "status"),
@@ -29,6 +33,7 @@ import com.open.rbac.openrbac.enums.EntityStatus;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Role {
 
@@ -41,6 +46,9 @@ public class Role {
         @NotBlank(message = "Role name is required")
         @Size(min = 2, max = 100, message = "Role name must be between 2 and 100 characters")
         private String name;
+
+        @Column(name = "keycloak_role_id", unique = true, length = 100)
+        private String keycloakRoleId;
 
         @Column(columnDefinition = "TEXT")
         private String description;

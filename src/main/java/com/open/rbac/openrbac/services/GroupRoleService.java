@@ -23,6 +23,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -41,7 +43,9 @@ public class GroupRoleService {
     private final UserRepository userRepository;
 
     @Transactional
-    @RequireAnyRole(value = { "realm-admin", "group-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin", "group-admin" })
+    @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
+            "effective_permissions" }, allEntries = true)
     public void addRolesToGroup(String realmIdentifier, Long groupId, AddGroupRolesRequest request) {
         Group group = groupRepository.findOne(Specification.allOf(
                 GroupSpecification.hasId(groupId),
@@ -94,7 +98,9 @@ public class GroupRoleService {
     }
 
     @Transactional
-    @RequireAnyRole(value = { "realm-admin", "group-admin" })
+    @RequireAnyRole(value = { "realm-admin", "platform-admin", "group-admin" })
+    @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
+            "effective_permissions" }, allEntries = true)
     public void removeRolesFromGroup(String realmIdentifier, Long groupId, RemoveGroupRolesRequest request) {
         boolean groupExists = groupRepository.exists(Specification.allOf(
                 GroupSpecification.hasId(groupId),
@@ -111,6 +117,8 @@ public class GroupRoleService {
     }
 
     @Transactional
+    @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
+            "effective_permissions" }, allEntries = true)
     public void updateGroupRolesExpiry(String realmIdentifier, Long groupId, UpdateGroupRolesExpiryRequest request) {
         boolean groupExists = groupRepository.exists(Specification.allOf(
                 GroupSpecification.hasId(groupId),
@@ -170,6 +178,7 @@ public class GroupRoleService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "role_checks", key = "#realmIdentifier + '-g' + #groupId + '-' + #roleId + '-' + #roleName")
     public boolean hasRole(String realmIdentifier, Long groupId, Long roleId, String roleName) {
         if (roleId == null && (roleName == null || roleName.isEmpty())) {
             throw new IllegalArgumentException("Either roleId or roleName must be provided");

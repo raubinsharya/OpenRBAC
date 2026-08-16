@@ -64,6 +64,15 @@ OpenRBAC is a high-performance, developer-friendly **Role-Based Access Control (
 
 ---
 
+## 🔐 Keycloak Synchronization & System Roles
+
+OpenRBAC seamlessly synchronizes roles with Keycloak via Kafka. To protect essential administrative roles from being modified or their status toggled through the UI or API:
+
+1. **System Roles Flag (`isSystemRole`)**: Add the custom attribute `isSystemRole` with the value `true` to your role in Keycloak. OpenRBAC will dynamically parse this attribute during sync (`CREATE` or `UPDATE` events) and lock down the role in the database.
+2. **Platform Admin**: The `platform-admin` role is a special system role. Any user assigned the `platform-admin` role will have unrestricted access across **all realms**. By default, `platform-admin` and `realm-admin` are hardcoded as system roles, but it is recommended to explicitly set the `isSystemRole` attribute in Keycloak.
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Framework:** [Spring Boot 3.4.x](https://spring.io/projects/spring-boot)
@@ -125,7 +134,14 @@ src/main/java/com/open/rbac/openrbac/
 
 ---
 
-## 📖 API Documentation (Summary)
+## 📖 API Documentation
+
+**Interactive Swagger UI is available out-of-the-box!**
+Once the application is running, simply navigate to:
+👉 `http://localhost:8080/swagger-ui.html`
+to explore, test, and authenticate with all API endpoints directly from your browser.
+
+### Important Endpoints Summary
 
 | Endpoint                                           | Method     | Description                                                       |
 | :------------------------------------------------- | :--------- | :---------------------------------------------------------------- |

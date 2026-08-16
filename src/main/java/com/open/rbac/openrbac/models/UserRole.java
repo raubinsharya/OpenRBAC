@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.models;
 
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
  * Allows assigning roles directly to users (in addition to group-based roles)
  */
 @Entity
+@Audited
 @Table(name = "user_roles", indexes = {
                 @Index(name = "idx_user_role_user", columnList = "user_id"),
                 @Index(name = "idx_user_role_role", columnList = "role_id"),

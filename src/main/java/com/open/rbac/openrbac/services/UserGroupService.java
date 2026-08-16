@@ -21,8 +21,8 @@ import com.open.rbac.openrbac.models.User;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
 import java.util.stream.Collectors;
+import org.springframework.cache.annotation.CacheEvict;
 
 import com.open.rbac.openrbac.utils.SecurityUtils;
 import org.springframework.stereotype.Service;
@@ -55,6 +55,8 @@ public class UserGroupService {
     }
 
     @Transactional
+    @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
+            "effective_permissions" }, allEntries = true)
     public List<UserGroupDTO> addMembersToGroup(String realmIdentifier, Long groupId, AddGroupMembersRequest request) {
         Group group = groupRepository.findOne(Specification.allOf(
                 GroupSpecification.hasId(groupId),
@@ -101,6 +103,8 @@ public class UserGroupService {
     }
 
     @Transactional
+    @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
+            "effective_permissions" }, allEntries = true)
     public void removeMembersFromGroup(String realmIdentifier, Long groupId, RemoveGroupMembersRequest request) {
         boolean groupExists = groupRepository.exists(Specification.allOf(
                 GroupSpecification.hasId(groupId),
@@ -122,6 +126,8 @@ public class UserGroupService {
     }
 
     @Transactional
+    @CacheEvict(value = { "role_checks", "effective_roles", "permission_checks",
+            "effective_permissions" }, allEntries = true)
     public void updateMembersExpiry(String realmIdentifier, Long groupId, UpdateGroupMembersExpiryRequest request) {
         boolean groupExists = groupRepository.exists(Specification.allOf(
                 GroupSpecification.hasId(groupId),

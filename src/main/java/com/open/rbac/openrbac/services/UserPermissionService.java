@@ -26,6 +26,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.cache.annotation.CacheEvict;
 
 import java.util.List;
 import java.util.Objects;
@@ -41,7 +42,8 @@ public class UserPermissionService {
         private final UserEffectivePermissionRepository userEffectivePermissionRepository;
 
         @Transactional
-        // @RequireAnyRole(value = {"realm-admin"})
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
+        @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
         public void addPermissionsToUser(String realmIdentifier, Long userId, AddUserPermissionsRequest request) {
                 User user = userRepository.findOne(Specification.allOf(
                                 UserSpecification.hasUserId(userId, realmIdentifier),
@@ -91,7 +93,8 @@ public class UserPermissionService {
         }
 
         @Transactional
-        // @RequireAnyRole(value = {"realm-admin"})
+        @RequireAnyRole(value = { "realm-admin", "platform-admin" })
+        @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
         public void removePermissionsFromUser(String realmIdentifier, Long userId,
                         RemoveUserPermissionsRequest request) {
                 boolean userExists = userRepository
@@ -109,6 +112,7 @@ public class UserPermissionService {
         }
 
         @Transactional
+        @CacheEvict(value = { "permission_checks", "effective_permissions" }, allEntries = true)
         public void updateUserPermissionsExpiry(String realmIdentifier, Long userId,
                         UpdateUserPermissionsExpiryRequest request) {
                 boolean userExists = userRepository

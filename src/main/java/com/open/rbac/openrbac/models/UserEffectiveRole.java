@@ -1,5 +1,6 @@
 package com.open.rbac.openrbac.models;
 
+import org.hibernate.envers.Audited;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -16,6 +17,7 @@ import org.hibernate.annotations.Subselect;
 import java.time.LocalDateTime;
 
 @Entity
+@Audited
 @Immutable
 @Subselect("""
             SELECT
@@ -63,6 +65,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+
 public class UserEffectiveRole {
 
     @Id

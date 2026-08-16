@@ -3,6 +3,7 @@ package com.open.rbac.openrbac.models;
 import com.fasterxml.jackson.annotation.*;
 import com.open.rbac.openrbac.enums.EntityStatus;
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -19,6 +20,7 @@ import java.util.List;
  * authorization-related data
  */
 @Entity
+@Audited
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -34,6 +36,7 @@ import java.util.List;
 })
 
 @JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "id")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User {
     @Id
@@ -86,6 +89,7 @@ public class User {
     // === RBAC REALM ===
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "realm_id", nullable = false)
+    @JsonIgnore
     private Realm realm;
 
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)

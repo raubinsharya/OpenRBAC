@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.models;
 
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
  * Supports both direct role assignments and inherited roles from parent groups
  */
 @Entity
+@Audited
 @Table(name = "group_roles", indexes = {
                 @Index(name = "idx_group_role_group", columnList = "group_id"),
                 @Index(name = "idx_group_role_role", columnList = "role_id"),

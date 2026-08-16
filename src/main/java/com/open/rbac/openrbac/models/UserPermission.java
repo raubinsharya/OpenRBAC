@@ -1,6 +1,7 @@
 package com.open.rbac.openrbac.models;
 
 import jakarta.persistence.*;
+import org.hibernate.envers.Audited;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,6 +15,7 @@ import java.time.LocalDateTime;
  * Allows granting specific permissions directly to users without roles
  */
 @Entity
+@Audited
 @Table(name = "user_permissions", indexes = {
                 @Index(name = "idx_user_permission_user", columnList = "user_id"),
                 @Index(name = "idx_user_permission_permission", columnList = "permission_id"),

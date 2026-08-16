@@ -18,8 +18,10 @@ public class RealmController {
 
     @GetMapping
     public ResponseEntity<?> getAllRealms(
-            @RequestParam(required = false) String status,  @ModelAttribute RealmFilterRequest realmFilterRequest) {
-        var realms = realmService.getAllRealms(status, realmFilterRequest);
+            @AuthenticationPrincipal Jwt jwt,
+            @RequestParam(required = false) String status,
+            @ModelAttribute RealmFilterRequest realmFilterRequest) {
+        var realms = realmService.getAllRealms(jwt, status, realmFilterRequest);
         return ResponseEntity.ok(realms);
     }
 
@@ -30,7 +32,7 @@ public class RealmController {
             @RequestParam(required = false) boolean includeUsers,
             @RequestParam(required = false) boolean includeRoles,
             @RequestParam(required = false) boolean includePermissions) {
-        return ResponseEntity.ok(realmService.getRealmById(id, includeUsers, includeRoles, includePermissions));
+        return ResponseEntity.ok(realmService.getRealmById(jwt, id, includeUsers, includeRoles, includePermissions));
     }
 
     @GetMapping("/realm-id/{realmId}")
@@ -40,7 +42,7 @@ public class RealmController {
             @RequestParam(required = false) boolean includeUsers,
             @RequestParam(required = false) boolean includeRoles,
             @RequestParam(required = false) boolean includePermissions) {
-        return ResponseEntity.ok(realmService.getRealmByRealmId(realmId, includeUsers, includeRoles, includePermissions));
+        return ResponseEntity.ok(realmService.getRealmByRealmId(jwt, realmId, includeUsers, includeRoles, includePermissions));
     }
 
 }
